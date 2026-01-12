@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const { User, Patient, Doctor, Nurse } = require('../models/schema');
+const { User, Patient, Doctor, Nurse,LabTech } = require('../models/schema');
 const { asyncHandler } = require('../middleware/errorMiddleware');
 const jwt = require('jsonwebtoken');
 
@@ -17,11 +17,14 @@ const generateToken = (id) => {
 /* =====================
    SIGNUP (No Transactions)
 ===================== */
+/* =====================
+   SIGNUP (No Transactions)
+===================== */
 exports.signup = asyncHandler(async (req, res, next) => {
   const { name, email, password, role, phone, ...profileData } = req.body;
 
-  // 1️⃣ Validate Role (Hard Stop)
-  const allowedRoles = ['PATIENT', 'DOCTOR', 'NURSE', 'ADMIN'];
+  // 1️⃣ Validate Role (Hard Stop) - Add LAB_TECH
+  const allowedRoles = ['PATIENT', 'DOCTOR', 'NURSE', 'ADMIN', 'LAB_TECH'];
   if (!allowedRoles.includes(role)) {
     res.status(400);
     throw new Error('Invalid role specified');
@@ -91,7 +94,29 @@ exports.signup = asyncHandler(async (req, res, next) => {
         userId: newUser._id,
         employeeId: profileData.employeeId,
         licenseNumber: profileData.licenseNumber,
-        wardId: profileData.wardId
+        wardId: profileData.wardId,
+        specialization: profileData.specialization || 'General',
+        experience: profileData.experience || 0,
+        shift: profileData.shift || 'Rotating'
+      });
+    }
+
+    // Add LAB_TECH profile creation
+    if (role === 'LAB_TECH') {
+      await LabTech.create({
+        userId: newUser._id,
+        employeeId: profileData.employeeId,
+        department: profileData.department,
+        licenseNumber: profileData.licenseNumber,
+        specialization: profileData.specialization || 'General',
+        experience: profileData.experience || 0,
+        shift: profileData.shift || 'Rotating',
+        equipmentPermissions: profileData.equipmentPermissions || [],
+        certifiedTests: profileData.certifiedTests || [],
+        isActive: true,
+        joinDate: new Date(),
+        testsConducted: 0,
+        accuracyRate: 0
       });
     }
 
@@ -113,7 +138,6 @@ exports.signup = asyncHandler(async (req, res, next) => {
 
   } catch (error) {
     // 6️⃣ Clean up on error - delete user if profile creation failed
-    // This maintains data consistency without transactions
     if (error.name !== 'ValidationError') {
       // Find and delete the user if it was created
       const createdUser = await User.findOne({ email });
@@ -124,7 +148,6 @@ exports.signup = asyncHandler(async (req, res, next) => {
     return next(error);
   }
 });
-
 /* =====================
    LOGIN
 ===================== */

@@ -7,7 +7,9 @@ const { errorHandler } = require('./middleware/errorMiddleware');
 // Import routes
 const authRoutes = require('./routes/authRoutes');
 const adminRoutes = require('./routes/crudadmin');
-const wardRoutes=require('./routes/wardRoutes');
+const wardRoutes = require('./routes/wardRoutes');
+const doctorRoutes = require('./routes/doctors/doctorRoutes'); // Add this line
+const labTechRoutes = require('./routes/labtech/labTechRoutes'); // Add this line
 // Create Express app
 const app = express();
 
@@ -16,7 +18,6 @@ connectDB();
 
 // 2. Middleware
 app.use(cors());
-
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -27,7 +28,9 @@ app.get('/', (req, res) => {
     version: '1.0.0',
     endpoints: {
       auth: '/api/v1/auth',
-      admin: '/api/v1/admin'
+      admin: '/api/v1/admin',
+      wards: '/api/v1/wards',
+      doctors: '/api/v1/doctors' // Add this
     }
   });
 });
@@ -36,7 +39,9 @@ app.get('/', (req, res) => {
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/admin', adminRoutes);
 app.use('/api/v1/wards', wardRoutes);
-// 4. 404 Handler - FIXED: Remove the asterisk or use proper pattern
+app.use('/api/v1/doctors', doctorRoutes); // Add this line
+app.use('/api/v1/labtech', labTechRoutes); // Add this line
+// 4. 404 Handler
 app.use((req, res, next) => {
   res.status(404).json({
     success: false,

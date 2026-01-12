@@ -21,7 +21,9 @@ import {
   Divider,
   Card,
   CardContent,
-  Chip
+  Chip,
+  Switch,
+  FormControlLabel
 } from '@mui/material';
 import {
   Visibility,
@@ -36,7 +38,14 @@ import {
   Bed,
   CalendarToday,
   Notes,
-  AssignmentInd
+  AssignmentInd,
+  Science,
+  Work,
+  MedicalServices,
+  Schedule,
+  VerifiedUser,
+  School,
+  DeviceHub
 } from '@mui/icons-material';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
@@ -63,7 +72,7 @@ const Signup = () => {
     role: 'PATIENT',
     phone: '',
 
-    // Personal Details (for patients)
+    // Personal Details (for all roles)
     age: '',
     gender: '',
     address: '',
@@ -86,7 +95,23 @@ const Signup = () => {
     wardId: '', // For nurse - ward assignment
     specialization: 'General',
     experience: '',
-    shift: 'Rotating'
+    shift: 'Rotating',
+
+    // Lab Tech-specific
+    labEmployeeId: '',
+    labDepartment: 'Pathology',
+    labLicenseNumber: '',
+    labSpecialization: 'General',
+    labExperience: '',
+    labShift: 'Rotating',
+    equipmentPermissions: [
+      { equipmentType: 'Microscope', canOperate: true },
+      { equipmentType: 'Centrifuge', canOperate: true },
+      { equipmentType: 'Blood Analyzer', canOperate: true }
+    ],
+    certifiedTests: [
+      { testName: 'CBC', certificationDate: new Date().toISOString().split('T')[0] }
+    ]
   });
 
   // Form validation errors
@@ -138,7 +163,7 @@ const Signup = () => {
         break;
 
       case 1: // Personal Details (required for all roles)
-        if (['PATIENT', 'DOCTOR', 'NURSE'].includes(formData.role)) {
+        if (['PATIENT', 'DOCTOR', 'NURSE', 'LAB_TECH'].includes(formData.role)) {
           if (!formData.age) newErrors.age = 'Age is required';
           if (!formData.gender) newErrors.gender = 'Gender is required';
           if (!formData.address?.trim()) newErrors.address = 'Address is required';
@@ -157,10 +182,17 @@ const Signup = () => {
           if (!formData.specialization?.trim()) newErrors.specialization = 'Specialization is required';
           if (!formData.department?.trim()) newErrors.department = 'Department is required';
         }
+        
         if (formData.role === 'NURSE') {
           if (!formData.employeeId?.trim()) newErrors.employeeId = 'Employee ID is required';
           if (!formData.licenseNumber?.trim()) newErrors.licenseNumber = 'License number is required';
           if (!formData.wardId) newErrors.wardId = 'Ward assignment is required';
+        }
+        
+        if (formData.role === 'LAB_TECH') {
+          if (!formData.labEmployeeId?.trim()) newErrors.labEmployeeId = 'Employee ID is required';
+          if (!formData.labLicenseNumber?.trim()) newErrors.labLicenseNumber = 'License number is required';
+          if (!formData.labDepartment) newErrors.labDepartment = 'Department is required';
         }
         break;
     }
@@ -223,6 +255,16 @@ const Signup = () => {
           specialization: formData.specialization,
           experience: parseInt(formData.experience) || 0,
           shift: formData.shift
+        }),
+        ...(formData.role === 'LAB_TECH' && {
+          employeeId: formData.labEmployeeId,
+          department: formData.labDepartment,
+          licenseNumber: formData.labLicenseNumber,
+          specialization: formData.labSpecialization,
+          experience: parseInt(formData.labExperience) || 0,
+          shift: formData.labShift,
+          equipmentPermissions: formData.equipmentPermissions,
+          certifiedTests: formData.certifiedTests
         })
       };
 
@@ -255,6 +297,15 @@ const Signup = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Update role selection
+  const handleRoleChange = (e) => {
+    const newRole = e.target.value;
+    setFormData(prev => ({
+      ...prev,
+      role: newRole
+    }));
   };
 
   // Get step content
@@ -375,7 +426,7 @@ const Signup = () => {
                 <Select
                   name="role"
                   value={formData.role}
-                  onChange={handleChange}
+                  onChange={handleRoleChange}
                   label="Role"
                   startAdornment={
                     <InputAdornment position="start">
@@ -386,6 +437,7 @@ const Signup = () => {
                   <MenuItem value="PATIENT">Patient</MenuItem>
                   <MenuItem value="DOCTOR">Doctor</MenuItem>
                   <MenuItem value="NURSE">Nurse</MenuItem>
+                  <MenuItem value="LAB_TECH">Lab Technician</MenuItem>
                 </Select>
                 {errors.role && <FormHelperText>{errors.role}</FormHelperText>}
               </FormControl>
@@ -544,6 +596,21 @@ const Signup = () => {
                     }}
                   />
                 </Grid>
+                
+                <Grid item xs={12} md={6}>
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={formData.isAdmitted}
+                        onChange={(e) => setFormData(prev => ({
+                          ...prev,
+                          isAdmitted: e.target.checked
+                        }))}
+                      />
+                    }
+                    label="Currently Admitted"
+                  />
+                </Grid>
               </>
             )}
           </Grid>
@@ -696,6 +763,196 @@ const Signup = () => {
               </>
             )}
 
+            {/* Lab Tech-specific fields */}
+            {formData.role === 'LAB_TECH' && (
+              <>
+                <Grid item xs={12}>
+                  <Typography variant="h6" gutterBottom color="primary">
+                    <Science sx={{ mr: 1, verticalAlign: 'middle' }} />
+                    Laboratory Technician Information
+                  </Typography>
+                </Grid>
+                
+                <Grid item xs={12} md={6}>
+                  <TextField
+                    fullWidth
+                    label="Employee ID"
+                    name="labEmployeeId"
+                    value={formData.labEmployeeId}
+                    onChange={handleChange}
+                    error={!!errors.labEmployeeId}
+                    helperText={errors.labEmployeeId}
+                    required
+                    placeholder="e.g., LT-2024-001"
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <Badge />
+                        </InputAdornment>
+                      ),
+                    }}
+                  />
+                </Grid>
+                
+                <Grid item xs={12} md={6}>
+                  <TextField
+                    fullWidth
+                    label="License Number"
+                    name="labLicenseNumber"
+                    value={formData.labLicenseNumber}
+                    onChange={handleChange}
+                    error={!!errors.labLicenseNumber}
+                    helperText={errors.labLicenseNumber}
+                    required
+                    placeholder="Lab technician license"
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <VerifiedUser />
+                        </InputAdornment>
+                      ),
+                    }}
+                  />
+                </Grid>
+                
+                <Grid item xs={12} md={6}>
+                  <FormControl fullWidth error={!!errors.labDepartment} required>
+                    <InputLabel>Department</InputLabel>
+                    <Select
+                      name="labDepartment"
+                      value={formData.labDepartment}
+                      onChange={handleChange}
+                      label="Department"
+                      startAdornment={
+                        <InputAdornment position="start">
+                          <Work />
+                        </InputAdornment>
+                      }
+                    >
+                      <MenuItem value="Pathology">Pathology</MenuItem>
+                      <MenuItem value="Radiology">Radiology</MenuItem>
+                      <MenuItem value="Biochemistry">Biochemistry</MenuItem>
+                      <MenuItem value="Microbiology">Microbiology</MenuItem>
+                      <MenuItem value="Hematology">Hematology</MenuItem>
+                      <MenuItem value="General">General Laboratory</MenuItem>
+                    </Select>
+                    {errors.labDepartment && <FormHelperText>{errors.labDepartment}</FormHelperText>}
+                  </FormControl>
+                </Grid>
+                
+                <Grid item xs={12} md={6}>
+                  <FormControl fullWidth>
+                    <InputLabel>Specialization</InputLabel>
+                    <Select
+                      name="labSpecialization"
+                      value={formData.labSpecialization}
+                      onChange={handleChange}
+                      label="Specialization"
+                      startAdornment={
+                        <InputAdornment position="start">
+                          <School />
+                        </InputAdornment>
+                      }
+                    >
+                      <MenuItem value="General">General</MenuItem>
+                      <MenuItem value="X-Ray">X-Ray</MenuItem>
+                      <MenuItem value="MRI">MRI</MenuItem>
+                      <MenuItem value="CT Scan">CT Scan</MenuItem>
+                      <MenuItem value="Blood Tests">Blood Tests</MenuItem>
+                      <MenuItem value="Urine Analysis">Urine Analysis</MenuItem>
+                      <MenuItem value="Tissue Analysis">Tissue Analysis</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Grid>
+                
+                <Grid item xs={12} md={6}>
+                  <TextField
+                    fullWidth
+                    label="Experience (years)"
+                    name="labExperience"
+                    type="number"
+                    value={formData.labExperience}
+                    onChange={handleChange}
+                    InputProps={{
+                      inputProps: { min: 0, max: 50 },
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <Work />
+                        </InputAdornment>
+                      ),
+                    }}
+                  />
+                </Grid>
+                
+                <Grid item xs={12} md={6}>
+                  <FormControl fullWidth>
+                    <InputLabel>Shift</InputLabel>
+                    <Select
+                      name="labShift"
+                      value={formData.labShift}
+                      onChange={handleChange}
+                      label="Shift"
+                      startAdornment={
+                        <InputAdornment position="start">
+                          <Schedule />
+                        </InputAdornment>
+                      }
+                    >
+                      <MenuItem value="Morning">Morning</MenuItem>
+                      <MenuItem value="Evening">Evening</MenuItem>
+                      <MenuItem value="Night">Night</MenuItem>
+                      <MenuItem value="Rotating">Rotating</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Grid>
+                
+                <Grid item xs={12}>
+                  <Divider sx={{ my: 2 }}>
+                    <Typography variant="body2" color="text.secondary">
+                      Equipment Permissions
+                    </Typography>
+                  </Divider>
+                  
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                    Default permissions enabled for standard laboratory equipment.
+                    Can be updated later in profile settings.
+                  </Typography>
+                  
+                  <Grid container spacing={2}>
+                    {formData.equipmentPermissions.map((item, index) => (
+                      <Grid item xs={12} md={4} key={index}>
+                        <Card variant="outlined">
+                          <CardContent>
+                            <Box display="flex" alignItems="center" gap={1}>
+                              <DeviceHub color="primary" />
+                              <Typography variant="subtitle2">{item.equipmentType}</Typography>
+                            </Box>
+                            <FormControlLabel
+                              control={
+                                <Switch
+                                  checked={item.canOperate}
+                                  onChange={(e) => {
+                                    const newPermissions = [...formData.equipmentPermissions];
+                                    newPermissions[index].canOperate = e.target.checked;
+                                    setFormData(prev => ({
+                                      ...prev,
+                                      equipmentPermissions: newPermissions
+                                    }));
+                                  }}
+                                  size="small"
+                                />
+                              }
+                              label={item.canOperate ? "Can Operate" : "Cannot Operate"}
+                            />
+                          </CardContent>
+                        </Card>
+                      </Grid>
+                    ))}
+                  </Grid>
+                </Grid>
+              </>
+            )}
+
             {/* No professional info needed for patients */}
             {formData.role === 'PATIENT' && (
               <Grid item xs={12}>
@@ -737,7 +994,7 @@ const Signup = () => {
             Create New Account
           </Typography>
           <Typography variant="body1" color="text.secondary">
-            Register as a Patient, Doctor, or Nurse
+            Register as a Patient, Doctor, Nurse, or Lab Technician
           </Typography>
         </Box>
 
@@ -765,10 +1022,13 @@ const Signup = () => {
         {/* Current Role Indicator */}
         <Box sx={{ mb: 3, textAlign: 'center' }}>
           <Chip 
-            label={`Registering as: ${formData.role}`}
+            label={`Registering as: ${formData.role === 'LAB_TECH' ? 'Lab Technician' : formData.role}`}
             color="primary"
             variant="outlined"
             sx={{ fontWeight: 'bold' }}
+            icon={formData.role === 'LAB_TECH' ? <Science /> : 
+                  formData.role === 'DOCTOR' ? <LocalHospital /> : 
+                  formData.role === 'NURSE' ? <Badge /> : <Person />}
           />
         </Box>
 
@@ -830,7 +1090,7 @@ const Signup = () => {
 
       {/* Role Information Cards */}
       <Grid container spacing={2} sx={{ mt: 2 }}>
-        <Grid item xs={12} md={4}>
+        <Grid item xs={12} md={3}>
           <Card variant="outlined">
             <CardContent>
               <Typography variant="h6" gutterBottom color="primary">
@@ -844,7 +1104,7 @@ const Signup = () => {
           </Card>
         </Grid>
         
-        <Grid item xs={12} md={4}>
+        <Grid item xs={12} md={3}>
           <Card variant="outlined">
             <CardContent>
               <Typography variant="h6" gutterBottom color="primary">
@@ -858,7 +1118,7 @@ const Signup = () => {
           </Card>
         </Grid>
         
-        <Grid item xs={12} md={4}>
+        <Grid item xs={12} md={3}>
           <Card variant="outlined">
             <CardContent>
               <Typography variant="h6" gutterBottom color="primary">
@@ -871,12 +1131,23 @@ const Signup = () => {
             </CardContent>
           </Card>
         </Grid>
+        
+        <Grid item xs={12} md={3}>
+          <Card variant="outlined">
+            <CardContent>
+              <Typography variant="h6" gutterBottom color="primary">
+                <Science sx={{ mr: 1, verticalAlign: 'middle' }} />
+                Lab Technician
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Register to manage laboratory tests, samples, and reports.
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
       </Grid>
     </Container>
   );
 };
 
 export default Signup;
-
-// Note: Make sure to install required dependencies:
-// npm install @mui/material @emotion/react @emotion/styled @mui/icons-material dayjs

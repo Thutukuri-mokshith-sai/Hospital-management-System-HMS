@@ -36,36 +36,34 @@ import {
   List,
   ListItem,
   ListItemText,
-  ListItemAvatar,
-  alpha,
-  
+  ListItemAvatar
 } from '@mui/material';
-import {
-  Add,
-  Edit,
-  Delete,
-  Search,
-  Science,
-  Person,
-  Assignment,
-  BarChart,
-  TrendingUp,
-  CheckCircle,
-  Pending,
-  Schedule,
-  LocalHospital,
-  AccessTime,
-  PriorityHigh,
-  AssignmentTurnedIn,
-  FilterList,
-  Refresh,
-  Visibility,
-  PersonAdd,
-  Group,
-  Timeline,
-  Error,
-  
-} from '@mui/icons-material';
+import { alpha } from '@mui/material/styles';
+
+// Import icons individually
+import AddIcon from '@mui/icons-material/Add';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
+import SearchIcon from '@mui/icons-material/Search';
+import ScienceIcon from '@mui/icons-material/Science';
+import PersonIcon from '@mui/icons-material/Person';
+import AssignmentIcon from '@mui/icons-material/Assignment';
+import BarChartIcon from '@mui/icons-material/BarChart';
+import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import PendingIcon from '@mui/icons-material/Pending';
+import ScheduleIcon from '@mui/icons-material/Schedule';
+import LocalHospitalIcon from '@mui/icons-material/LocalHospital';
+import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import PriorityHighIcon from '@mui/icons-material/PriorityHigh';
+import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn';
+import FilterListIcon from '@mui/icons-material/FilterList';
+import RefreshIcon from '@mui/icons-material/Refresh';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import PersonAddIcon from '@mui/icons-material/PersonAdd';
+import GroupIcon from '@mui/icons-material/Group';
+import TimelineIcon from '@mui/icons-material/Timeline';
+import ErrorIcon from '@mui/icons-material/Error';
 
 import { BASE_URL } from '../../api/api';
 
@@ -611,7 +609,7 @@ const Laboratory = () => {
             gap: 2
           }}
         >
-          <Science sx={{ fontSize: 36 }} />
+          <ScienceIcon sx={{ fontSize: 36 }} />
           Laboratory Management System
         </Typography>
         <Typography variant="body2" color="text.secondary">
@@ -639,10 +637,10 @@ const Laboratory = () => {
             }
           }}
         >
-          <Tab icon={<BarChart />} label="Dashboard" />
-          <Tab icon={<Group />} label="Lab Technicians" />
-          <Tab icon={<Science />} label="Lab Tests" />
-          <Tab icon={<Timeline />} label="Analytics" />
+          <Tab icon={<BarChartIcon />} label="Dashboard" />
+          <Tab icon={<GroupIcon />} label="Lab Technicians" />
+          <Tab icon={<ScienceIcon />} label="Lab Tests" />
+          <Tab icon={<TimelineIcon />} label="Analytics" />
         </Tabs>
       </Paper>
 
@@ -668,13 +666,13 @@ const Laboratory = () => {
                       {dashboardStats.totalTests}
                     </Typography>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                      <TrendingUp sx={{ fontSize: 16 }} />
+                      <TrendingUpIcon sx={{ fontSize: 16 }} />
                       <Typography variant="caption">
                         {dashboardStats.completedTests} completed
                       </Typography>
                     </Box>
                   </Box>
-                  <Science sx={{ fontSize: 48, opacity: 0.3 }} />
+                  <ScienceIcon sx={{ fontSize: 48, opacity: 0.3 }} />
                 </Box>
               </CardContent>
             </Card>
@@ -701,7 +699,7 @@ const Laboratory = () => {
                       {dashboardStats.processingTests} in progress
                     </Typography>
                   </Box>
-                  <Pending sx={{ fontSize: 48, opacity: 0.3 }} />
+                  <PendingIcon sx={{ fontSize: 48, opacity: 0.3 }} />
                 </Box>
               </CardContent>
             </Card>
@@ -728,7 +726,7 @@ const Laboratory = () => {
                       {dashboardStats.activeLabTechs} active
                     </Typography>
                   </Box>
-                  <Person sx={{ fontSize: 48, opacity: 0.3 }} />
+                  <PersonIcon sx={{ fontSize: 48, opacity: 0.3 }} />
                 </Box>
               </CardContent>
             </Card>
@@ -755,7 +753,7 @@ const Laboratory = () => {
                       Avg: {dashboardStats.avgTurnaroundTime}
                     </Typography>
                   </Box>
-                  <TrendingUp sx={{ fontSize: 48, opacity: 0.3 }} />
+                  <TrendingUpIcon sx={{ fontSize: 48, opacity: 0.3 }} />
                 </Box>
                 <LinearProgress 
                   variant="determinate" 
@@ -776,14 +774,14 @@ const Laboratory = () => {
         {/* Quick Actions */}
         <Paper sx={{ p: 3, mb: 3, borderRadius: 2 }}>
           <Typography variant="h6" sx={{ mb: 2, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
-            <LocalHospital /> Quick Actions
+            <LocalHospitalIcon /> Quick Actions
           </Typography>
           <Grid container spacing={2}>
             <Grid item xs={12} sm={6} md={3}>
               <Button
                 fullWidth
                 variant="contained"
-                startIcon={<PersonAdd />}
+                startIcon={<PersonAddIcon />}
                 onClick={() => setOpenTechDialog(true)}
                 sx={{
                   borderRadius: 2,
@@ -799,7 +797,7 @@ const Laboratory = () => {
               <Button
                 fullWidth
                 variant="contained"
-                startIcon={<Add />}
+                startIcon={<AddIcon />}
                 onClick={openCreateTestDialog}
                 sx={{
                   borderRadius: 2,
@@ -815,7 +813,7 @@ const Laboratory = () => {
               <Button
                 fullWidth
                 variant="contained"
-                startIcon={<Assignment />}
+                startIcon={<AssignmentIcon />}
                 onClick={() => setActiveTab(2)}
                 sx={{
                   borderRadius: 2,
@@ -831,7 +829,7 @@ const Laboratory = () => {
               <Button
                 fullWidth
                 variant="contained"
-                startIcon={<BarChart />}
+                startIcon={<BarChartIcon />}
                 onClick={() => setActiveTab(3)}
                 sx={{
                   borderRadius: 2,
@@ -851,7 +849,7 @@ const Laboratory = () => {
           <Grid item xs={12} md={8}>
             <Paper sx={{ p: 3, borderRadius: 2 }}>
               <Typography variant="h6" sx={{ mb: 2, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Science /> Recent Lab Tests
+                <ScienceIcon /> Recent Lab Tests
               </Typography>
               {loading ? (
                 <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
@@ -917,7 +915,7 @@ const Laboratory = () => {
           <Grid item xs={12} md={4}>
             <Paper sx={{ p: 3, borderRadius: 2 }}>
               <Typography variant="h6" sx={{ mb: 2, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Group /> Active Lab Technicians
+                <GroupIcon /> Active Lab Technicians
               </Typography>
               {loading ? (
                 <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
@@ -942,7 +940,7 @@ const Laboratory = () => {
                           secondary={
                             <>
                               <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                <Science sx={{ fontSize: 14 }} />
+                                <ScienceIcon sx={{ fontSize: 14 }} />
                                 {tech.labTech?.department}
                               </Typography>
                               <Chip
@@ -979,20 +977,20 @@ const Laboratory = () => {
               }
             }}
             InputProps={{
-              startAdornment: <Search sx={{ mr: 1, color: 'action.active' }} />
+              startAdornment: <SearchIcon sx={{ mr: 1, color: 'action.active' }} />
             }}
           />
           <Stack direction="row" spacing={2}>
             <Button
               variant="outlined"
-              startIcon={<FilterList />}
+              startIcon={<FilterListIcon />}
               sx={{ borderRadius: 2, textTransform: 'none' }}
             >
               Filter
             </Button>
             <Button
               variant="contained"
-              startIcon={<PersonAdd />}
+              startIcon={<PersonAddIcon />}
               onClick={() => setOpenTechDialog(true)}
               sx={{
                 borderRadius: 2,
@@ -1042,7 +1040,7 @@ const Laboratory = () => {
                       <Box>
                         <Switch
                           checked={tech.labTech?.isActive}
-                          onChange={() => handleToggleLabTechStatus(tech.user?.id, tech.labTech?.isActive)}
+                          onChange={() => handleToggleLabTechStatus(tech.labTech._id, tech.labTech?.isActive)}
                           size="small"
                         />
                       </Box>
@@ -1112,16 +1110,16 @@ const Laboratory = () => {
                         <Stack direction="row" spacing={1}>
                           <Tooltip title="Edit">
                             <IconButton size="small">
-                              <Edit fontSize="small" />
+                              <EditIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
                           <Tooltip title="Delete">
                             <IconButton 
                               size="small" 
                               color="error"
-                              onClick={() => handleDeleteLabTech(tech.user?.id)}
+                              onClick={() => handleDeleteLabTech(tech.labTech._id)}
                             >
-                              <Delete fontSize="small" />
+                              <DeleteIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
                         </Stack>
@@ -1151,20 +1149,20 @@ const Laboratory = () => {
                 }
               }}
               InputProps={{
-                startAdornment: <Search sx={{ mr: 1, color: 'action.active' }} />
+                startAdornment: <SearchIcon sx={{ mr: 1, color: 'action.active' }} />
               }}
             />
             <Stack direction="row" spacing={2}>
               <Button
                 variant="outlined"
-                startIcon={<FilterList />}
+                startIcon={<FilterListIcon />}
                 sx={{ borderRadius: 2, textTransform: 'none' }}
               >
                 Filter
               </Button>
               <Button
                 variant="contained"
-                startIcon={<Add />}
+                startIcon={<AddIcon />}
                 onClick={openCreateTestDialog}
                 sx={{
                   borderRadius: 2,
@@ -1215,17 +1213,24 @@ const Laboratory = () => {
                 <FormControl fullWidth size="small">
                   <InputLabel>Lab Technician</InputLabel>
                   <Select
-                    value={testFilters.labTechId}
-                    label="Lab Technician"
-                    onChange={(e) => setTestFilters({ ...testFilters, labTechId: e.target.value })}
-                  >
-                    <MenuItem value="">All</MenuItem>
-                    {labTechs.map((tech) => (
-                      <MenuItem key={tech.user?.id} value={tech.user?.id}>
-                        {tech.user?.name}
-                      </MenuItem>
-                    ))}
-                  </Select>
+  value={currentAssignment.labTechId}
+  onChange={(e) =>
+    setCurrentAssignment({
+      ...currentAssignment,
+      labTechId: e.target.value
+    })
+  }
+>
+  {labTechs.map((tech) => (
+    <MenuItem
+      key={tech.user._id}
+      value={tech.user._id}   // ✅ USER ID ONLY
+    >
+      {tech.user.name} ({tech.labTech.employeeId})
+    </MenuItem>
+  ))}
+</Select>
+
                 </FormControl>
               </Grid>
               <Grid item xs={12} sm={6} md={3}>
@@ -1248,7 +1253,7 @@ const Laboratory = () => {
                   <Button
                     variant="contained"
                     onClick={() => setRefreshKey(prev => prev + 1)}
-                    startIcon={<Refresh />}
+                    startIcon={<RefreshIcon />}
                     sx={{ textTransform: 'none' }}
                   >
                     Refresh
@@ -1305,9 +1310,9 @@ const Laboratory = () => {
                         label={test.status}
                         size="small"
                         icon={
-                          test.status === 'Completed' ? <CheckCircle /> :
-                          test.status === 'Processing' ? <AccessTime /> :
-                          <Pending />
+                          test.status === 'Completed' ? <CheckCircleIcon /> :
+                          test.status === 'Processing' ? <AccessTimeIcon /> :
+                          <PendingIcon />
                         }
                         sx={{
                           bgcolor: alpha(getStatusColor(test.status), 0.1),
@@ -1320,7 +1325,7 @@ const Laboratory = () => {
                       <Chip
                         label={test.priority}
                         size="small"
-                        icon={<PriorityHigh />}
+                        icon={<PriorityHighIcon />}
                         sx={{
                           bgcolor: alpha(getPriorityColor(test.priority), 0.1),
                           color: getPriorityColor(test.priority),
@@ -1343,7 +1348,7 @@ const Laboratory = () => {
                                 onClick={() => openAssignDialogForTest(test._id)}
                                 sx={{ color: '#3b82f6' }}
                               >
-                                <Assignment fontSize="small" />
+                                <AssignmentIcon fontSize="small" />
                               </IconButton>
                             </Tooltip>
                             <Tooltip title="Start Processing">
@@ -1352,7 +1357,7 @@ const Laboratory = () => {
                                 onClick={() => openStatusDialogForTest(test._id, test.status)}
                                 sx={{ color: '#f59e0b' }}
                               >
-                                <Schedule fontSize="small" />
+                                <ScheduleIcon fontSize="small" />
                               </IconButton>
                             </Tooltip>
                           </>
@@ -1364,7 +1369,7 @@ const Laboratory = () => {
                               onClick={() => openReportDialogForTest(test._id)}
                               sx={{ color: '#10b981' }}
                             >
-                              <AssignmentTurnedIn fontSize="small" />
+                              <AssignmentTurnedInIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
                         )}
@@ -1374,7 +1379,7 @@ const Laboratory = () => {
                               size="small"
                               sx={{ color: '#8b5cf6' }}
                             >
-                              <Visibility fontSize="small" />
+                              <VisibilityIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
                         )}
@@ -1408,7 +1413,7 @@ const Laboratory = () => {
                       {analytics.summary?.totalTests || 0}
                     </Typography>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Science sx={{ fontSize: 16, color: '#3b82f6' }} />
+                      <ScienceIcon sx={{ fontSize: 16, color: '#3b82f6' }} />
                       <Typography variant="body2">
                         {analytics.summary?.testsCompleted || 0} completed
                       </Typography>
@@ -1450,7 +1455,7 @@ const Laboratory = () => {
                       {analytics.summary?.avgTurnaroundTime || 'N/A'}
                     </Typography>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <AccessTime sx={{ fontSize: 16, color: '#f59e0b' }} />
+                      <AccessTimeIcon sx={{ fontSize: 16, color: '#f59e0b' }} />
                       <Typography variant="body2">Average completion time</Typography>
                     </Box>
                   </CardContent>
@@ -1477,7 +1482,7 @@ const Laboratory = () => {
             {/* Department Performance */}
             <Paper sx={{ p: 3, mb: 3, borderRadius: 2 }}>
               <Typography variant="h6" sx={{ mb: 3, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
-                <BarChart /> Department Performance
+                <BarChartIcon /> Department Performance
               </Typography>
               <Grid container spacing={3}>
                 {analytics.departmentPerformance?.map((dept) => (
@@ -1542,7 +1547,7 @@ const Laboratory = () => {
             {/* Top Performing Technicians */}
             <Paper sx={{ p: 3, borderRadius: 2 }}>
               <Typography variant="h6" sx={{ mb: 3, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
-                <TrendingUp /> Top Performing Technicians
+                <TrendingUpIcon /> Top Performing Technicians
               </Typography>
               <Grid container spacing={3}>
                 {analytics.topPerformingTechs?.slice(0, 3).map((tech, index) => (
@@ -1807,18 +1812,30 @@ const Laboratory = () => {
           <Stack spacing={2} sx={{ mt: 2 }}>
             <FormControl fullWidth>
               <InputLabel>Lab Technician</InputLabel>
-              <Select
-                value={currentAssignment.labTechId}
-                label="Lab Technician"
-                onChange={(e) => setCurrentAssignment({ ...currentAssignment, labTechId: e.target.value })}
-              >
-                {labTechs.filter(tech => tech.labTech?.isActive).map((tech) => (
-                  <MenuItem key={tech.user?.id} value={tech.user?.id}>
-                    {tech.user?.name} - {tech.labTech?.specialization} ({tech.labTech?.department})
-                  </MenuItem>
-                ))}
-              </Select>
+              
+<Select
+  value={currentAssignment.labTechId}
+  label="Lab Technician"
+  onChange={(e) =>
+    setCurrentAssignment({
+      ...currentAssignment,
+      labTechId: e.target.value
+    })
+  }
+>
+  {labTechs
+    .filter(tech => tech.labTech?.isActive)
+    .map((tech) => (
+      <MenuItem
+        key={tech.labTech._id}
+        value={tech.labTech._id}  // This should be the LabTech._id
+      >
+        {tech.user.name} – {tech.labTech.specialization} ({tech.labTech.department})
+      </MenuItem>
+    ))}
+</Select>
             </FormControl>
+
             <TextField
               label="Reason for Assignment"
               value={currentAssignment.reason}

@@ -20,33 +20,32 @@ const menuSections = [
   {
     title: 'Overview',
     items: [
-      { text: 'Dashboard', icon: <Dashboard />, path: '/dashboard', badge: null },
-      { text: 'Reports', icon: <Assessment />, path: '/dashboard/reports', badge: 'New' },
+      { text: 'Dashboard', icon: <Dashboard />, path: '/admin/dashboard', badge: null },
+      { text: 'Reports', icon: <Assessment />, path: '/admin/reports', badge: 'New' },
     ]
   },
   {
     title: 'People Management',
     items: [
-      { text: 'Users', icon: <People />, path: '/dashboard/users', badge: null },
-      { text: 'Patients', icon: <LocalHospital />, path: '/dashboard/patients', badge: '156' },
-      { text: 'Doctors', icon: <Person />, path: '/dashboard/doctors', badge: null },
-      { text: 'Nurses', icon: <LocalHospital />, path: '/dashboard/nurses', badge: null },
+      { text: 'Users', icon: <People />, path: '/admin/users', badge: null },
+      { text: 'Patients', icon: <LocalHospital />, path: '/admin/patients', badge: '156' },
+      { text: 'Doctors', icon: <Person />, path: '/admin/doctors', badge: null },
+      { text: 'Nurses', icon: <LocalHospital />, path: '/admin/nurses', badge: null },
     ]
   },
   {
     title: 'Operations',
     items: [
-      // {text:"prescription:",icon:<CalendarMonth/>,path:'/dashboard/prescription' ,badge:null},
-      { text: 'Appointments', icon: <CalendarMonth />, path: '/dashboard/appointments', badge: '12' },
-      { text: 'Pharmacy', icon: <Medication />, path: '/dashboard/pharmacy', badge: null },
-      { text: 'Laboratory', icon: <Science />, path: '/dashboard/laboratory', badge: '5' },
-      { text: 'Wards', icon: <LocationCity />, path: '/dashboard/wards', badge: null },
+      { text: 'Appointments', icon: <CalendarMonth />, path: '/admin/appointments', badge: '12' },
+      { text: 'Pharmacy', icon: <Medication />, path: '/admin/pharmacy', badge: null },
+      { text: 'Laboratory', icon: <Science />, path: '/admin/laboratory', badge: '5' },
+      { text: 'Wards', icon: <LocationCity />, path: '/admin/wards', badge: null },
     ]
   },
   {
     title: 'Finance',
     items: [
-      { text: 'Billing', icon: <AttachMoney />, path: '/dashboard/billing', badge: null },
+      { text: 'Billing', icon: <AttachMoney />, path: '/admin/billing', badge: null },
     ]
   }
 ];
@@ -55,7 +54,7 @@ const AdminLayout = () => {
   const [open, setOpen] = useState(true);
   const [anchorEl, setAnchorEl] = useState(null);
   const [darkMode, setDarkMode] = useState(false);
-  const [searchQuery, setSearchQuery] = useState(''); // Search State
+  const [searchQuery, setSearchQuery] = useState('');
   
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -76,7 +75,6 @@ const AdminLayout = () => {
     navigate('/login');
   };
 
-  // Logic: Filter menu items based on search query
   const filteredMenu = menuSections.map(section => ({
     ...section,
     items: section.items.filter(item => 
@@ -213,7 +211,7 @@ const AdminLayout = () => {
 
       {/* Bottom Section */}
       <Box sx={{ p: 2 }}>
-        <ListItemButton onClick={() => navigate('/dashboard/settings')} sx={{ borderRadius: 2, backgroundColor: alpha('#fff', 0.08), mb: 1 }}>
+        <ListItemButton onClick={() => navigate('/admin/settings')} sx={{ borderRadius: 2, backgroundColor: alpha('#fff', 0.08), mb: 1 }}>
           <ListItemIcon sx={{ color: alpha('#fff', 0.7) }}><Settings /></ListItemIcon>
           <ListItemText primary="Settings" primaryTypographyProps={{ fontSize: 14, color: alpha('#fff', 0.85) }} />
         </ListItemButton>
@@ -259,7 +257,7 @@ const AdminLayout = () => {
               <Typography variant="subtitle2" fontWeight={600}>Admin User</Typography>
               <Typography variant="caption" color="text.secondary">admin@hospital.com</Typography>
             </Box>
-            <MenuItem onClick={() => navigate('/dashboard/profile')} sx={{ py: 1.5, gap: 1.5 }}><Avatar sx={{ width: 28, height: 28 }} /> Profile</MenuItem>
+            <MenuItem onClick={() => navigate('/admin/profile')} sx={{ py: 1.5, gap: 1.5 }}><Avatar sx={{ width: 28, height: 28 }} /> Profile</MenuItem>
             <Divider />
             <MenuItem onClick={handleLogout} sx={{ py: 1.5, color: '#f44336', gap: 1.5 }}><Logout fontSize="small" /> Logout</MenuItem>
           </Menu>

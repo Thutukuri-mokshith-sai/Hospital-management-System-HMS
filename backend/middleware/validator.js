@@ -20,7 +20,8 @@ exports.validateSignup = asyncHandler(async (req, res, next) => {
     throw new Error('Password must be at least 8 characters long');
   }
 
-  const allowedRoles = ['PATIENT', 'DOCTOR', 'NURSE', 'ADMIN']; // Added ADMIN
+  // Add LAB_TECH to allowed roles
+  const allowedRoles = ['PATIENT', 'DOCTOR', 'NURSE', 'ADMIN', 'LAB_TECH'];
   if (!allowedRoles.includes(role)) {
     res.status(400);
     throw new Error('Invalid role specified');

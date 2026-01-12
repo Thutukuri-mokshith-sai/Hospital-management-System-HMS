@@ -5,7 +5,60 @@ const { asyncHandler } = require('../../middleware/errorMiddleware');
 /* =====================
    LAB TECH MANAGEMENT (CRUD)
 ===================== */
+/* =====================
+   HELPER FUNCTIONS
+===================== */
 
+// Find lab tech by various identifiers
+const findLabTechByIdentifier = async (identifier) => {
+  let labTech = null;
+  let user = null;
+
+  // Check if identifier is a valid ObjectId
+  if (mongoose.Types.ObjectId.isValid(identifier)) {
+    user = await User.findById(identifier);
+    if (user && user.role === 'LAB_TECH') {
+      labTech = await LabTech.findOne({ userId: user._id });
+    }
+  } else {
+    // Try to find by employeeId
+    labTech = await LabTech.findOne({ employeeId: identifier });
+    
+    if (!labTech) {
+      // Try to find by user email or name
+      user = await User.findOne({
+        $or: [
+          { email: identifier },
+          { name: { $regex: `^${identifier}$`, $options: 'i' } }
+        ],
+        role: 'LAB_TECH'
+      });
+      
+      if (user) {
+        labTech = await LabTech.findOne({ userId: user._id });
+      }
+    } else {
+      user = await User.findById(labTech.userId);
+    }
+  }
+
+  return { user, labTech };
+};
+
+// Validate lab tech exists and is active
+const validateLabTech = async (identifier) => {
+  const { user, labTech } = await findLabTechByIdentifier(identifier);
+  
+  if (!user || !labTech) {
+    throw new Error('Lab technician not found');
+  }
+  
+  if (!labTech.isActive) {
+    throw new Error('Lab technician is inactive');
+  }
+  
+  return { user, labTech };
+};
 // Get all lab technicians
 exports.getAllLabTechs = asyncHandler(async (req, res, next) => {
   const { 
@@ -112,36 +165,41 @@ exports.getAllLabTechs = asyncHandler(async (req, res, next) => {
 });
 
 // Get single lab tech details
+// Get single lab tech details
 exports.getLabTechById = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
 
-  if (!mongoose.Types.ObjectId.isValid(id)) {
-    res.status(400);
-    throw new Error('Invalid lab tech ID');
+  // Check if id is a valid ObjectId or an employeeId
+  let user = null;
+  let labTech = null;
+
+  if (mongoose.Types.ObjectId.isValid(id)) {
+    // Find by User._id
+    user = await User.findById(id).select('-password');
+    if (user && user.role === 'LAB_TECH') {
+      labTech = await LabTech.findOne({ userId: id });
+    }
+  } else {
+    // Try to find by employeeId
+    labTech = await LabTech.findOne({ employeeId: id })
+      .populate('userId', 'name email phone createdAt');
+    
+    if (labTech) {
+      user = labTech.userId;
+    }
   }
 
-  const user = await User.findById(id).select('-password');
-  
-  if (!user || user.role !== 'LAB_TECH') {
+  if (!user || !labTech) {
     res.status(404);
     throw new Error('Lab technician not found');
   }
 
-  const labTech = await LabTech.findOne({ userId: id })
-    .populate('userId', 'name email phone createdAt')
-    .lean();
-  
-  if (!labTech) {
-    res.status(404);
-    throw new Error('Lab technician profile not found');
-  }
-
-  // Get recent lab tests conducted
+  // Rest of the function remains the same...
   const recentLabTests = await LabTest.find({
-    labTechId: id,
+    labTechId: user._id, // Use User._id
     status: 'Completed'
   })
-    .populate({
+      .populate({
       path: 'patientId',
       populate: {
         path: 'userId',
@@ -183,42 +241,31 @@ exports.getLabTechById = asyncHandler(async (req, res, next) => {
 
   // Get monthly performance stats
   const currentYear = new Date().getFullYear();
-  const monthlyStats = await LabTest.aggregate([
-    {
-      $match: {
-        labTechId: id,
-        status: 'Completed',
-        updatedAt: {
-          $gte: new Date(`${currentYear}-01-01`),
-          $lte: new Date(`${currentYear}-12-31`)
-        }
-      }
-    },
-    {
-      $group: {
-        _id: { $month: '$updatedAt' },
-        count: { $sum: 1 },
-        uniquePatients: { $addToSet: '$patientId' }
-      }
-    },
-    {
-      $project: {
-        month: '$_id',
-        testsConducted: '$count',
-        uniquePatients: { $size: '$uniquePatients' }
-      }
-    },
-    { $sort: { month: 1 } }
-  ]);
+  // In getLabTechById function, change these aggregation queries:
 
-  // Get test type distribution
-  const testTypeStats = await LabTest.aggregate([
-    {
-      $match: {
-        labTechId: id,
-        status: 'Completed'
+// Get monthly performance stats
+const monthlyStats = await LabTest.aggregate([
+  {
+    $match: {
+      labTechId: user._id, // Changed from 'id' to 'user._id'
+      status: 'Completed',
+      updatedAt: {
+        $gte: new Date(`${currentYear}-01-01`),
+        $lte: new Date(`${currentYear}-12-31`)
       }
-    },
+    }
+  },
+  // ... rest of the aggregation
+]);
+
+// Get test type distribution
+const testTypeStats = await LabTest.aggregate([
+  {
+    $match: {
+      labTechId: user._id, // Changed from 'id' to 'user._id'
+      status: 'Completed'
+    }
+  },
     {
       $group: {
         _id: '$testName',
@@ -347,55 +394,104 @@ exports.createLabTech = asyncHandler(async (req, res, next) => {
 });
 
 // Update lab technician profile - TRANSACTIONS REMOVED
+// Update lab technician profile
 exports.updateLabTech = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
   const updateData = req.body;
 
-  if (!mongoose.Types.ObjectId.isValid(id)) {
-    res.status(400);
-    throw new Error('Invalid lab tech ID');
+  // Try to find lab technician by various identifiers
+  let labTech = null;
+  let user = null;
+
+  // Check if id is a valid ObjectId
+  if (mongoose.Types.ObjectId.isValid(id)) {
+    // First try to find by LabTech._id
+    labTech = await LabTech.findById(id).populate('userId', 'name email role phone');
+    
+    // If not found by LabTech._id, try to find by userId
+    if (!labTech) {
+      // Find by User._id
+      user = await User.findById(id);
+      if (user && user.role === 'LAB_TECH') {
+        labTech = await LabTech.findOne({ userId: id }).populate('userId', 'name email role phone');
+      }
+    } else {
+      user = labTech.userId;
+    }
+  } else {
+    // Try to find by employeeId
+    labTech = await LabTech.findOne({ employeeId: id }).populate('userId', 'name email role phone');
+    
+    if (labTech) {
+      user = labTech.userId;
+    } else {
+      // Try to find by user email or name
+      user = await User.findOne({
+        $or: [
+          { email: id },
+          { name: { $regex: `^${id}$`, $options: 'i' } }
+        ],
+        role: 'LAB_TECH'
+      });
+      
+      if (user) {
+        labTech = await LabTech.findOne({ userId: user._id }).populate('userId', 'name email role phone');
+      }
+    }
   }
 
-  const user = await User.findById(id);
-  
-  if (!user || user.role !== 'LAB_TECH') {
+  if (!user || !labTech) {
     res.status(404);
     throw new Error('Lab technician not found');
-  }
-
-  const labTech = await LabTech.findOne({ userId: id });
-  
-  if (!labTech) {
-    res.status(404);
-    throw new Error('Lab technician profile not found');
   }
 
   try {
     // Update user info if provided
     const userUpdate = {};
-    if (updateData.name) userUpdate.name = updateData.name;
-    if (updateData.phone) userUpdate.phone = updateData.phone;
+    
+    if (updateData.name && updateData.name !== user.name) {
+      userUpdate.name = updateData.name;
+    }
+    
+    if (updateData.phone && updateData.phone !== user.phone) {
+      userUpdate.phone = updateData.phone;
+    }
+    
     if (updateData.email && updateData.email !== user.email) {
       const existingUser = await User.findOne({ email: updateData.email });
-      if (existingUser && existingUser._id.toString() !== id) {
-        throw new Error('Email already in use');
+      if (existingUser && existingUser._id.toString() !== user._id.toString()) {
+        throw new Error('Email already in use by another user');
       }
       userUpdate.email = updateData.email;
     }
 
+    // Update password if provided
+    if (updateData.password) {
+      userUpdate.password = updateData.password;
+    }
+
+    // Update user active status if provided
+    if (updateData.isActive !== undefined && updateData.isActive !== user.isActive) {
+      userUpdate.isActive = updateData.isActive;
+    }
+
+    // Update user if there are changes
     if (Object.keys(userUpdate).length > 0) {
-      await User.findByIdAndUpdate(id, userUpdate); // REMOVED SESSION PARAMETER
+      await User.findByIdAndUpdate(user._id, userUpdate, { new: true, runValidators: true });
     }
 
     // Remove user fields from lab tech update
     delete updateData.name;
     delete updateData.phone;
     delete updateData.email;
+    delete updateData.password;
+    delete updateData.isActive;
 
     // Handle employee ID uniqueness
     if (updateData.employeeId && updateData.employeeId !== labTech.employeeId) {
       const existingEmployee = await LabTech.findOne({ 
-        employeeId: updateData.employeeId 
+        employeeId: updateData.employeeId,
+        _id: { $ne: labTech._id } // Exclude current lab tech
       });
       if (existingEmployee) {
         throw new Error('Employee ID already exists');
@@ -405,40 +501,293 @@ exports.updateLabTech = asyncHandler(async (req, res, next) => {
     // Handle license number uniqueness
     if (updateData.licenseNumber && updateData.licenseNumber !== labTech.licenseNumber) {
       const existingLicense = await LabTech.findOne({ 
-        licenseNumber: updateData.licenseNumber 
+        licenseNumber: updateData.licenseNumber,
+        _id: { $ne: labTech._id } // Exclude current lab tech
       });
       if (existingLicense) {
         throw new Error('License number already exists');
       }
     }
 
-    // Update lab tech profile - REMOVED SESSION PARAMETER
-    const updatedLabTech = await LabTech.findOneAndUpdate(
-      { userId: id },
-      updateData,
+    // Prepare lab tech update object
+    const labTechUpdate = {};
+    
+    // Only update fields that are provided and different
+    const labTechFields = [
+      'employeeId', 'department', 'licenseNumber', 'specialization',
+      'shift', 'experience', 'equipmentPermissions', 'certifiedTests',
+      'accuracyRate', 'notes'
+    ];
+    
+    labTechFields.forEach(field => {
+      if (updateData[field] !== undefined) {
+        labTechUpdate[field] = updateData[field];
+      }
+    });
+
+    // Update lastUpdated timestamp
+    labTechUpdate.lastUpdated = new Date();
+
+    // Update lab tech profile
+    const updatedLabTech = await LabTech.findByIdAndUpdate(
+      labTech._id,
+      labTechUpdate,
       { new: true, runValidators: true }
-    ).populate('userId', 'name email phone');
+    ).populate('userId', 'name email phone isActive');
+
+    // Get updated user info
+    const updatedUser = await User.findById(user._id).select('-password');
+
+    // Get updated statistics
+    const stats = {
+      totalTests: await LabTest.countDocuments({ labTechId: user._id }),
+      completedTests: await LabTest.countDocuments({ labTechId: user._id, status: 'Completed' }),
+      pendingTests: await LabTest.countDocuments({ 
+        labTechId: user._id, 
+        status: { $in: ['Requested', 'Processing'] } 
+      }),
+      lastActivity: await LabTest.findOne({ 
+        labTechId: user._id 
+      }).sort({ updatedAt: -1 }).select('updatedAt testName').lean()
+    };
 
     res.status(200).json({
       success: true,
       message: 'Lab technician updated successfully',
-      data: updatedLabTech
+      data: {
+        user: updatedUser,
+        labTech: updatedLabTech,
+        statistics: stats
+      },
+      updatedFields: {
+        user: Object.keys(userUpdate),
+        labTech: Object.keys(labTechUpdate)
+      }
     });
 
   } catch (error) {
-    // REMOVED TRANSACTION ABORT LOGIC
+    // Handle validation errors
+    if (error.name === 'ValidationError') {
+      res.status(400);
+      throw new Error(`Validation error: ${error.message}`);
+    }
+    
+    // Handle duplicate key errors
+    if (error.code === 11000) {
+      res.status(409);
+      const field = Object.keys(error.keyPattern)[0];
+      throw new Error(`${field.charAt(0).toUpperCase() + field.slice(1)} already exists`);
+    }
+    
     throw error;
   }
 });
-
+// Update lab technician status (active/inactive)
 // Update lab technician status (active/inactive)
 exports.updateLabTechStatus = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
-  const { isActive } = req.body;
+  const { isActive, reason, notes } = req.body;
 
-  if (!mongoose.Types.ObjectId.isValid(id)) {
+  // Validate input
+  if (isActive === undefined) {
     res.status(400);
-    throw new Error('Invalid lab tech ID');
+    throw new Error('Status is required');
+  }
+
+  if (typeof isActive !== 'boolean') {
+    res.status(400);
+    throw new Error('Status must be a boolean value (true or false)');
+  }
+
+  let user = null;
+  let labTech = null;
+
+  // Find lab tech by various identifiers
+  if (mongoose.Types.ObjectId.isValid(id)) {
+    // Find by User._id
+    user = await User.findById(id);
+    if (user && user.role === 'LAB_TECH') {
+      labTech = await LabTech.findOne({ userId: id });
+    }
+  } else {
+    // Try to find by employeeId
+    labTech = await LabTech.findOne({ employeeId: id });
+    
+    if (labTech) {
+      user = await User.findById(labTech.userId);
+    } else {
+      // Try to find by user email
+      user = await User.findOne({ 
+        $or: [
+          { email: id },
+          { name: { $regex: `^${id}$`, $options: 'i' } }
+        ],
+        role: 'LAB_TECH'
+      });
+      
+      if (user) {
+        labTech = await LabTech.findOne({ userId: user._id });
+      }
+    }
+  }
+
+  if (!user || !labTech) {
+    res.status(404);
+    throw new Error('Lab technician not found');
+  }
+
+  // Check if status is already the same
+  if (labTech.isActive === isActive) {
+    res.status(400);
+    throw new Error(`Lab technician is already ${isActive ? 'active' : 'inactive'}`);
+  }
+
+  // Store previous status for audit
+  const previousStatus = labTech.isActive;
+  
+  // Update lab tech status
+  labTech.isActive = isActive;
+  
+  // Add status change history
+  if (!labTech.statusHistory) {
+    labTech.statusHistory = [];
+  }
+  
+  labTech.statusHistory.push({
+    previousStatus,
+    newStatus: isActive,
+    changedBy: req.user._id,
+    changedByName: req.user.name,
+    reason: reason || 'No reason provided',
+    notes: notes || '',
+    changedAt: new Date()
+  });
+
+  // If deactivating, check for pending tests
+  if (!isActive) {
+    const pendingTests = await LabTest.countDocuments({
+      labTechId: user._id,
+      status: { $in: ['Requested', 'Processing'] }
+    });
+
+    if (pendingTests > 0) {
+      res.status(400);
+      throw new Error(`Cannot deactivate lab technician with ${pendingTests} pending test(s). Reassign or complete tests first.`);
+    }
+  }
+
+  // Also update user active status
+  if (user.isActive !== isActive) {
+    user.isActive = isActive;
+    
+    // Add user status history
+    if (!user.statusHistory) {
+      user.statusHistory = [];
+    }
+    
+    user.statusHistory.push({
+      previousStatus: user.isActive,
+      newStatus: isActive,
+      changedBy: req.user._id,
+      changedByName: req.user.name,
+      reason: reason || 'Lab technician status change',
+      changedAt: new Date()
+    });
+    
+    await user.save();
+  }
+
+  // Save lab tech updates
+  await labTech.save();
+
+  // Get updated lab tech with populated data
+  const updatedLabTech = await LabTech.findOne({ userId: user._id })
+    .populate('userId', 'name email phone')
+    .lean();
+
+  // Get statistics for response
+  const stats = {
+    totalTests: await LabTest.countDocuments({ labTechId: user._id }),
+    completedTests: await LabTest.countDocuments({ labTechId: user._id, status: 'Completed' }),
+    pendingTests: await LabTest.countDocuments({ 
+      labTechId: user._id, 
+      status: { $in: ['Requested', 'Processing'] } 
+    }),
+    lastActivity: await LabTest.findOne({ 
+      labTechId: user._id 
+    }).sort({ updatedAt: -1 }).select('updatedAt testName').lean()
+  };
+
+  // If lab tech is being deactivated, create an audit log
+  if (!isActive) {
+    const AuditLog = require('../../models/AuditLog'); // If you have an audit log model
+    
+    if (AuditLog) {
+      await AuditLog.create({
+        action: 'LAB_TECH_DEACTIVATED',
+        performedBy: req.user._id,
+        performedByName: req.user.name,
+        targetUser: user._id,
+        targetUserName: user.name,
+        details: {
+          reason: reason || 'Lab technician deactivated',
+          notes: notes || '',
+          employeeId: labTech.employeeId,
+          department: labTech.department,
+          pendingTestsAtTime: stats.pendingTests,
+          totalTestsConducted: stats.totalTests
+        },
+        timestamp: new Date()
+      });
+    }
+  }
+
+  // Prepare response
+  const response = {
+    success: true,
+    message: `Lab technician ${isActive ? 'activated' : 'deactivated'} successfully`,
+    data: {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      employeeId: updatedLabTech.employeeId,
+      department: updatedLabTech.department,
+      specialization: updatedLabTech.specialization,
+      previousStatus,
+      newStatus: isActive,
+      changedAt: new Date(),
+      changedBy: {
+        id: req.user._id,
+        name: req.user.name,
+        role: req.user.role
+      },
+      reason: reason || '',
+      statistics: stats,
+      lastStatusChange: labTech.statusHistory?.[labTech.statusHistory.length - 1]
+    },
+    warnings: !isActive && stats.pendingTests > 0 ? 
+      [`Lab technician had ${stats.pendingTests} pending test(s) at time of deactivation`] : []
+  };
+
+  // If deactivating, suggest reassigning tests
+  if (!isActive && stats.pendingTests > 0) {
+    response.suggestions = [
+      `Consider reassigning ${stats.pendingTests} pending test(s) to another active lab technician`,
+      'Lab technician will not receive new test assignments until reactivated'
+    ];
+  }
+
+  res.status(200).json(response);
+});
+
+// Bulk update lab technician statuses
+exports.bulkUpdateLabTechStatus = asyncHandler(async (req, res, next) => {
+  const { labTechIds, isActive, reason, notes } = req.body;
+
+  if (!labTechIds || !Array.isArray(labTechIds) || labTechIds.length === 0) {
+    res.status(400);
+    throw new Error('Lab technician IDs array is required');
   }
 
   if (isActive === undefined) {
@@ -446,50 +795,185 @@ exports.updateLabTechStatus = asyncHandler(async (req, res, next) => {
     throw new Error('Status is required');
   }
 
-  const user = await User.findById(id);
-  
-  if (!user || user.role !== 'LAB_TECH') {
-    res.status(404);
-    throw new Error('Lab technician not found');
-  }
+  const results = {
+    successful: [],
+    failed: []
+  };
 
-  const labTech = await LabTech.findOne({ userId: id });
-  
-  if (!labTech) {
-    res.status(404);
-    throw new Error('Lab technician profile not found');
-  }
+  for (const identifier of labTechIds) {
+    try {
+      let user = null;
+      let labTech = null;
 
-  labTech.isActive = isActive;
-  await labTech.save();
+      // Find lab tech
+      if (mongoose.Types.ObjectId.isValid(identifier)) {
+        user = await User.findById(identifier);
+        if (user && user.role === 'LAB_TECH') {
+          labTech = await LabTech.findOne({ userId: identifier });
+        }
+      } else {
+        labTech = await LabTech.findOne({ employeeId: identifier });
+        if (labTech) {
+          user = await User.findById(labTech.userId);
+        }
+      }
 
-  // Also update user active status
-  if (user.isActive !== isActive) {
-    user.isActive = isActive;
-    await user.save();
-  }
+      if (!user || !labTech) {
+        results.failed.push({
+          identifier,
+          error: 'Lab technician not found'
+        });
+        continue;
+      }
 
-  res.status(200).json({
-    success: true,
-    message: `Lab technician ${isActive ? 'activated' : 'deactivated'} successfully`,
-    data: {
-      id: user._id,
-      name: user.name,
-      email: user.email,
-      isActive: labTech.isActive,
-      employeeId: labTech.employeeId
+      // Skip if status is already the same
+      if (labTech.isActive === isActive) {
+        results.failed.push({
+          identifier,
+          error: `Already ${isActive ? 'active' : 'inactive'}`
+        });
+        continue;
+      }
+
+      // Check for pending tests if deactivating
+      if (!isActive) {
+        const pendingTests = await LabTest.countDocuments({
+          labTechId: user._id,
+          status: { $in: ['Requested', 'Processing'] }
+        });
+
+        if (pendingTests > 0) {
+          results.failed.push({
+            identifier,
+            error: `${pendingTests} pending tests`
+          });
+          continue;
+        }
+      }
+
+      // Update status
+      const previousStatus = labTech.isActive;
+      labTech.isActive = isActive;
+      
+      // Add to status history
+      if (!labTech.statusHistory) {
+        labTech.statusHistory = [];
+      }
+      
+      labTech.statusHistory.push({
+        previousStatus,
+        newStatus: isActive,
+        changedBy: req.user._id,
+        changedByName: req.user.name,
+        reason: reason || 'Bulk update',
+        notes: notes || '',
+        changedAt: new Date()
+      });
+
+      await labTech.save();
+
+      // Update user status
+      user.isActive = isActive;
+      await user.save();
+
+      results.successful.push({
+        id: user._id,
+        employeeId: labTech.employeeId,
+        name: user.name,
+        email: user.email,
+        previousStatus,
+        newStatus: isActive
+      });
+
+    } catch (error) {
+      results.failed.push({
+        identifier,
+        error: error.message
+      });
     }
-  });
-});
+  }
 
+  const response = {
+    success: true,
+    message: `Bulk status update completed: ${results.successful.length} successful, ${results.failed.length} failed`,
+    data: {
+      totalProcessed: labTechIds.length,
+      successful: results.successful.length,
+      failed: results.failed.length,
+      details: {
+        successful: results.successful,
+        failed: results.failed
+      }
+    }
+  };
+
+  // If all failed, return error status
+  if (results.successful.length === 0 && results.failed.length > 0) {
+    res.status(207); // Multi-status
+  }
+
+  res.status(results.successful.length === 0 ? 207 : 200).json(response);
+});
 // Assign lab technician to lab test
+// Assign lab technician to lab test
+// Assign lab technician to lab test
+// Assign lab technician to lab test (without certification requirement)
 exports.assignLabTechToTest = asyncHandler(async (req, res, next) => {
   const { testId } = req.params;
   const { labTechId } = req.body;
 
-  if (!mongoose.Types.ObjectId.isValid(testId) || !mongoose.Types.ObjectId.isValid(labTechId)) {
+  // Validate testId
+  if (!mongoose.Types.ObjectId.isValid(testId)) {
     res.status(400);
-    throw new Error('Invalid test ID or lab tech ID');
+    throw new Error('Invalid test ID');
+  }
+
+  let labTech = null;
+  let user = null;
+
+  // Check if labTechId is a valid ObjectId
+  if (mongoose.Types.ObjectId.isValid(labTechId)) {
+    // FIRST: Try to find by LabTech._id
+    labTech = await LabTech.findById(labTechId);
+    
+    if (!labTech) {
+      // SECOND: Try to find by userId (User._id)
+      labTech = await LabTech.findOne({ userId: labTechId });
+    }
+    
+    if (labTech) {
+      user = await User.findById(labTech.userId);
+    }
+  } else if (typeof labTechId === 'string') {
+    // Try to find by employeeId
+    labTech = await LabTech.findOne({ employeeId: labTechId });
+    
+    if (!labTech) {
+      // Try to find by user email
+      user = await User.findOne({ 
+        $or: [
+          { email: labTechId },
+          { name: { $regex: labTechId, $options: 'i' } }
+        ],
+        role: 'LAB_TECH'
+      });
+      
+      if (user) {
+        labTech = await LabTech.findOne({ userId: user._id });
+      }
+    } else {
+      user = await User.findById(labTech.userId);
+    }
+  }
+
+  if (!user || !labTech) {
+    res.status(404);
+    throw new Error('Lab technician not found. Please provide valid lab tech ID, employee ID, or email.');
+  }
+
+  if (!labTech.isActive) {
+    res.status(400);
+    throw new Error('Lab technician is inactive');
   }
 
   // Check if lab test exists
@@ -499,27 +983,26 @@ exports.assignLabTechToTest = asyncHandler(async (req, res, next) => {
     throw new Error('Lab test not found');
   }
 
-  // Check if lab technician exists and is active
-  const labTech = await LabTech.findOne({ userId: labTechId });
-  if (!labTech || !labTech.isActive) {
-    res.status(404);
-    throw new Error('Lab technician not found or inactive');
-  }
+  // REMOVED CERTIFICATION CHECK - COMMENTED OUT OPTIONALLY
+  /*
+  // Check if lab tech is certified for this test type (OPTIONAL)
+  const isCertified = labTech.certifiedTests?.some(cert => {
+    if (!cert.testName || !labTest.testName) return false;
+    return cert.testName.toLowerCase().includes(labTest.testName.toLowerCase()) ||
+           labTest.testName.toLowerCase().includes(cert.testName.toLowerCase());
+  });
 
-  // Check if lab tech is certified for this test type
-  const isCertified = labTech.certifiedTests.some(
-    cert => cert.testName.toLowerCase().includes(labTest.testName.toLowerCase())
-  );
-
-  if (!isCertified) {
+  if (!isCertified && labTech.certifiedTests?.length > 0) {
     res.status(400);
-    throw new Error('Lab technician is not certified for this test type');
+    throw new Error(`Lab technician is not certified for "${labTest.testName}". Certified tests: ${labTech.certifiedTests.map(ct => ct.testName).join(', ')}`);
   }
+  */
 
   // Update lab test with lab tech assignment
-  labTest.labTechId = labTechId;
+  labTest.labTechId = labTech.userId; // Store the User._id as reference
   labTest.status = 'Processing';
   labTest.assignedAt = new Date();
+  labTest.assignedBy = req.user._id; // Store who assigned this
   
   await labTest.save();
 
@@ -529,7 +1012,7 @@ exports.assignLabTechToTest = asyncHandler(async (req, res, next) => {
       path: 'patientId',
       populate: {
         path: 'userId',
-        select: 'name'
+        select: 'name age gender'
       }
     })
     .populate({
@@ -541,21 +1024,56 @@ exports.assignLabTechToTest = asyncHandler(async (req, res, next) => {
     })
     .populate({
       path: 'labTechId',
-      populate: {
-        path: 'userId',
-        select: 'name'
-      }
+      select: 'name email'
     })
     .lean();
+
+  // Get lab tech user info
+  const labTechUser = await User.findById(labTech.userId).select('name email');
+  
+  // Add lab tech details
+  updatedTest.labTechDetails = {
+    name: labTechUser?.name,
+    email: labTechUser?.email,
+    employeeId: labTech.employeeId,
+    department: labTech.department,
+    specialization: labTech.specialization,
+    experience: labTech.experience,
+    isActive: labTech.isActive
+  };
+
+  // Log assignment in lab tech's record
+  if (!labTech.testAssignments) {
+    labTech.testAssignments = [];
+  }
+  
+  labTech.testAssignments.push({
+    testId: labTest._id,
+    testName: labTest.testName || 'Unnamed Test',
+    assignedAt: new Date(),
+    status: 'Processing',
+    patientId: labTest.patientId,
+    doctorId: labTest.doctorId
+  });
+  
+  await labTech.save();
 
   res.status(200).json({
     success: true,
     message: 'Lab technician assigned to test successfully',
-    data: updatedTest
+    data: updatedTest,
+    assignmentDetails: {
+      assignedBy: req.user.name,
+      assignedAt: new Date(),
+      technicianDetails: {
+        name: labTechUser?.name,
+        employeeId: labTech.employeeId,
+        department: labTech.department,
+        specialization: labTech.specialization
+      }
+    }
   });
-});
-
-// Get lab technician performance report
+});// Get lab technician performance report
 exports.getLabTechPerformanceReport = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
   const { startDate, endDate, groupBy = 'month' } = req.query;
@@ -737,8 +1255,14 @@ exports.updateLabTechCertifications = asyncHandler(async (req, res, next) => {
     throw new Error('Lab technician not found');
   }
 
-  const labTech = await LabTech.findOne({ userId: id });
-  
+  const labTech = await LabTech.findOne({
+  $or: [
+    { _id: id },
+    { employeeId: id },
+    { userId: id } // 👈 ADD THIS
+  ]
+});
+
   if (!labTech) {
     res.status(404);
     throw new Error('Lab technician profile not found');

@@ -105,9 +105,9 @@ const Appointments = () => {
   const [loading, setLoading] = useState(false);
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [appointmentDetails, setAppointmentDetails] = useState(null);
-  // const [activeTab, setActiveTab] = useState(0);
   const [analyticsTab, setAnalyticsTab] = useState(0);
-  
+  const [formError, setFormError] = useState('');
+
   // Filters
   const [statusFilter, setStatusFilter] = useState('');
   const [dateFilter, setDateFilter] = useState(null);
@@ -163,7 +163,7 @@ const Appointments = () => {
     // Doctor distribution
     const doctorCount = {};
     appointments.forEach(a => {
-      const doctorName = a.doctorDetails?.userId?.name || 'Unknown';
+      const doctorName = a.doctor?.name || 'Unknown';
       doctorCount[doctorName] = (doctorCount[doctorName] || 0) + 1;
     });
     
@@ -212,6 +212,13 @@ const Appointments = () => {
       tomorrowsAppointments
     };
   }, [appointments]);
+const showFormError = (message) => {
+  setFormError(message);
+
+  setTimeout(() => {
+    setFormError('');
+  }, 1000); // 1 second
+};
 
   /* ================= FETCH APPOINTMENTS ================= */
   const fetchAppointments = async () => {
@@ -251,40 +258,58 @@ const Appointments = () => {
   };
 
   /* ================= FETCH DROPDOWN DATA ================= */
-  const fetchDropdownData = async () => {
-    try {
-      const [doctorsRes, patientsRes] = await Promise.all([
-        fetch(`${BASE_URL}/admin/doctors?limit=100`, {
-          headers: { Authorization: `Bearer ${token}` }
-        }),
-        fetch(`${BASE_URL}/admin/patients?limit=100`, {
-          headers: { Authorization: `Bearer ${token}` }
-        })
-      ]);
+  // Update the fetchDropdownData function to log data
+const fetchDropdownData = async () => {
+  try {
+    console.log('=== DEBUG: Fetching dropdown data ===');
+    
+    const [doctorsRes, patientsRes] = await Promise.all([
+      fetch(`${BASE_URL}/admin/doctors?limit=100`, {
+        headers: { Authorization: `Bearer ${token}` }
+      }),
+      fetch(`${BASE_URL}/admin/patients?limit=100`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+    ]);
 
-      if (doctorsRes.ok) {
-        const data = await doctorsRes.json();
-        setDoctors(data.data || []);
-        
-        // Extract unique departments and specializations
-        const depts = new Set();
-        const specs = new Set();
-        data.data.forEach(doctor => {
-          if (doctor.doctor?.department) depts.add(doctor.doctor.department);
-          if (doctor.doctor?.specialization) specs.add(doctor.doctor.specialization);
-        });
-        setDepartments(Array.from(depts));
-        setSpecializations(Array.from(specs));
-      }
+    console.log('Doctors response status:', doctorsRes.status);
+    console.log('Patients response status:', patientsRes.status);
 
-      if (patientsRes.ok) {
-        const data = await patientsRes.json();
-        setPatients(data.data || []);
+    if (doctorsRes.ok) {
+      const data = await doctorsRes.json();
+      console.log('Doctors data structure:', data);
+      console.log('Doctors array:', data.data);
+      console.log('Number of doctors:', data.data?.length);
+      
+      if (data.data && data.data.length > 0) {
+        console.log('First doctor sample:', data.data[0]);
+        console.log('First doctor user:', data.data[0].user);
+        console.log('First doctor doctor object:', data.data[0].doctor);
       }
-    } catch (error) {
-      console.error('Fetch dropdown data error:', error);
+      
+      setDoctors(data.data || []);
+    } else {
+      console.error('Doctors fetch failed:', await doctorsRes.text());
     }
-  };
+
+    if (patientsRes.ok) {
+      const data = await patientsRes.json();
+      console.log('Patients data structure:', data);
+      console.log('Patients array:', data.data);
+      console.log('Number of patients:', data.data?.length);
+      
+      if (data.data && data.data.length > 0) {
+        console.log('First patient sample:', data.data[0]);
+      }
+      
+      setPatients(data.data || []);
+    } else {
+      console.error('Patients fetch failed:', await patientsRes.text());
+    }
+  } catch (error) {
+    console.error('Fetch dropdown data error:', error);
+  }
+};
 
   /* ================= FETCH APPOINTMENT DETAILS ================= */
   const fetchAppointmentDetails = async (appointmentId) => {
@@ -369,42 +394,77 @@ const Appointments = () => {
       specializationFilter, startDateFilter, endDateFilter, sortBy, sortOrder]);
 
   /* ================= CREATE APPOINTMENT ================= */
-  const saveAppointment = async () => {
-    try {
-      console.log('Creating appointment with data:', currentAppointment);
-      
-      const appointmentData = {
-        ...currentAppointment,
-        date: format(currentAppointment.date, 'yyyy-MM-dd')
-      };
+const saveAppointment = async () => {
+  try {
+    console.log('=== DEBUG: Starting saveAppointment ===');
+    console.log('Current appointment data:', currentAppointment);
+    console.log('Token exists:', !!token);
+    
+    // Validate required fields
+if (!currentAppointment.patientId) {
+  showFormError('Please select a patient');
+  return;
+}
 
-      console.log('Formatted appointment data:', appointmentData);
+if (!currentAppointment.doctorId) {
+  showFormError('Please select a doctor');
+  return;
+}
 
-      const res = await fetch(`${BASE_URL}/admin/appointments`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify(appointmentData)
-      });
+if (!currentAppointment.date) {
+  showFormError('Please select a date');
+  return;
+}
 
-      const data = await res.json();
-      console.log('Response:', data);
-      
-      if (!res.ok) {
-        throw new Error(data.message || 'Failed to create appointment');
-      }
+if (!currentAppointment.time) {
+  showFormError('Please select a time');
+  return;
+}
 
-      setOpen(false);
-      fetchAppointments();
-      alert(data.message || 'Appointment created successfully!');
-    } catch (error) {
-      console.error('Save appointment error:', error);
-      alert(error.message || 'Failed to create appointment. Please try again.');
+    
+    const appointmentData = {
+      patientId: currentAppointment.patientId,
+      doctorId: currentAppointment.doctorId,
+      date: format(currentAppointment.date, 'yyyy-MM-dd'),
+      time: currentAppointment.time,
+      reason: currentAppointment.reason || '',
+      notes: currentAppointment.notes || '',
+      nursingNotes: currentAppointment.nursingNotes || '',
+      preparationStatus: currentAppointment.preparationStatus || 'Not Started'
+    };
+
+    console.log('Formatted data for API:', appointmentData);
+    console.log('Sending to:', `${BASE_URL}/admin/appointments`);
+
+    const res = await fetch(`${BASE_URL}/admin/appointments`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify(appointmentData)
+    });
+
+    console.log('Response status:', res.status);
+    console.log('Response headers:', res.headers);
+    
+    const data = await res.json();
+    console.log('Response data:', data);
+    
+    if (!res.ok) {
+      console.error('API Error:', data);
+      throw new Error(data.message || `Failed to create appointment (Status: ${res.status})`);
     }
-  };
 
+    setOpen(false);
+    fetchAppointments();
+    alert(data.message || 'Appointment created successfully!');
+    
+  } catch (error) {
+    console.error('=== DEBUG: Save appointment error ===', error);
+    alert(error.message || 'Failed to create appointment. Please try again.');
+  }
+};
   /* ================= UPDATE APPOINTMENT ================= */
   const updateAppointment = async () => {
     try {
@@ -663,8 +723,8 @@ const Appointments = () => {
   const handleOpenEditAppointment = (appointment) => {
     setSelectedAppointment(appointment);
     setCurrentAppointment({
-      patientId: appointment.patientId || appointment.patientDetails?.userId?._id || '',
-      doctorId: appointment.doctorId || appointment.doctorDetails?.userId?._id || '',
+      patientId: appointment.patient?._id || '',
+      doctorId: appointment.doctor?._id || '',
       date: appointment.date ? new Date(appointment.date) : new Date(),
       time: appointment.time || '09:00',
       reason: appointment.reason || '',
@@ -1155,14 +1215,14 @@ const Appointments = () => {
                         <TableCell>
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                             <Avatar sx={{ width: 32, height: 32, bgcolor: alpha('#3b82f6', 0.8) }}>
-                              {appointment.patientDetails?.userId?.name?.charAt(0) || 'P'}
+                              {appointment.patient?.name?.charAt(0) || 'P'}
                             </Avatar>
                             <Box>
                               <Typography variant="body2" fontWeight={600}>
-                                {appointment.patientDetails?.userId?.name || 'Unknown'}
+                                {appointment.patient?.name || 'Unknown'}
                               </Typography>
                               <Typography variant="caption" color="text.secondary">
-                                {appointment.patientDetails?.userId?.phone || 'No phone'}
+                                {appointment.patient?.phone || 'No phone'}
                               </Typography>
                             </Box>
                           </Box>
@@ -1170,14 +1230,14 @@ const Appointments = () => {
                         <TableCell>
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                             <Avatar sx={{ width: 32, height: 32, bgcolor: alpha('#10b981', 0.8) }}>
-                              {appointment.doctorDetails?.userId?.name?.charAt(0) || 'D'}
+                              {appointment.doctor?.name?.charAt(0) || 'D'}
                             </Avatar>
                             <Box>
                               <Typography variant="body2" fontWeight={600}>
-                                {appointment.doctorDetails?.userId?.name || 'Unknown'}
+                                {appointment.doctor?.name || 'Unknown'}
                               </Typography>
                               <Typography variant="caption" color="text.secondary">
-                                {appointment.doctorDetails?.specialization || 'General'}
+                                {appointment.doctor?.specialization || 'General'}
                               </Typography>
                             </Box>
                           </Box>
@@ -1567,175 +1627,203 @@ const Appointments = () => {
         </Paper>
 
         {/* Add / Edit Appointment Dialog */}
-        <Dialog 
-          open={open} 
-          onClose={() => setOpen(false)} 
-          fullWidth 
-          maxWidth="md"
-          PaperProps={{
-            sx: { borderRadius: 2 }
-          }}
-        >
-          <DialogTitle sx={{ fontWeight: 600, fontSize: '1.25rem' }}>
-            {editing ? 'Edit Appointment' : 'Schedule New Appointment'}
-          </DialogTitle>
-          <DialogContent>
-            <Grid container spacing={2.5} sx={{ mt: 1 }}>
-              <Grid item xs={12} md={6}>
-                <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>
-                  Appointment Details
-                </Typography>
-                <Stack spacing={2}>
-                  <FormControl fullWidth size="small">
-                    <InputLabel>Patient *</InputLabel>
-                    <Select
-                      value={currentAppointment.patientId}
-                      label="Patient *"
-                      onChange={(e) =>
-                        setCurrentAppointment({ ...currentAppointment, patientId: e.target.value })
-                      }
-                      required
-                    >
-                      <MenuItem value="">Select Patient</MenuItem>
-                      {patients.map(patient => (
-                        <MenuItem key={patient.user?._id} value={patient.user?._id}>
-                          {patient.user?.name} ({patient.user?.phone || 'No phone'})
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
+{/* Add / Edit Appointment Dialog */}
+<Dialog 
+  open={open} 
+  onClose={() => setOpen(false)} 
+  fullWidth 
+  maxWidth="md"
+  PaperProps={{
+    sx: { borderRadius: 2 }
+  }}
+>
+  <DialogTitle sx={{ fontWeight: 600, fontSize: '1.25rem' }}>
+    {editing ? 'Edit Appointment' : 'Schedule New Appointment'}
+  </DialogTitle>
+  <DialogContent>
+    <Grid container spacing={2.5} sx={{ mt: 1 }}>
+      <Grid item xs={12} md={6}>
+        <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>
+          Appointment Details
+        </Typography>
+        <Stack spacing={2}>
+          <FormControl fullWidth size="small">
+  <InputLabel>Patient *</InputLabel>
+  <Select
+    value={currentAppointment.patientId}
+    label="Patient *"
+    onChange={(e) =>
+      setCurrentAppointment({
+        ...currentAppointment,
+        patientId: e.target.value
+      })
+    }
+  >
+    <MenuItem value="">Select Patient</MenuItem>
 
-                  <FormControl fullWidth size="small">
-                    <InputLabel>Doctor *</InputLabel>
-                    <Select
-                      value={currentAppointment.doctorId}
-                      label="Doctor *"
-                      onChange={(e) =>
-                        setCurrentAppointment({ ...currentAppointment, doctorId: e.target.value })
-                      }
-                      required
-                    >
-                      <MenuItem value="">Select Doctor</MenuItem>
-                      {doctors.map(doctor => (
-                        <MenuItem key={doctor.user?._id} value={doctor.user?._id}>
-                          {doctor.user?.name} ({doctor.doctor?.specialization || 'General'})
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
+    {patients.map((item) => (
+      <MenuItem
+        key={item.user.id}
+        value={item.user.id}
+      >
+        {item.user.name} ({item.user.phone})
+      </MenuItem>
+    ))}
+  </Select>
+</FormControl>
 
-                  <DatePicker
-                    label="Appointment Date *"
-                    value={currentAppointment.date}
-                    onChange={(newValue) =>
-                      setCurrentAppointment({ ...currentAppointment, date: newValue })
-                    }
-                    slotProps={{ textField: { fullWidth: true, size: 'small', required: true } }}
-                  />
 
-                  <FormControl fullWidth size="small">
-                    <InputLabel>Time Slot *</InputLabel>
-                    <Select
-                      value={currentAppointment.time}
-                      label="Time Slot *"
-                      onChange={(e) =>
-                        setCurrentAppointment({ ...currentAppointment, time: e.target.value })
-                      }
-                      required
-                    >
-                      {timeSlots.map(time => (
-                        <MenuItem key={time} value={time}>{formatTime(time)}</MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                </Stack>
-              </Grid>
-
-              <Grid item xs={12} md={6}>
-                <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>
-                  Additional Information
-                </Typography>
-                <Stack spacing={2}>
-                  <TextField
-                    label="Reason for Visit"
-                    value={currentAppointment.reason}
-                    onChange={(e) =>
-                      setCurrentAppointment({ ...currentAppointment, reason: e.target.value })
-                    }
-                    fullWidth
-                    multiline
-                    rows={2}
-                    placeholder="e.g., Follow-up, Checkup, Emergency"
-                  />
-
-                  <TextField
-                    label="Doctor's Notes"
-                    value={currentAppointment.notes}
-                    onChange={(e) =>
-                      setCurrentAppointment({ ...currentAppointment, notes: e.target.value })
-                    }
-                    fullWidth
-                    multiline
-                    rows={2}
-                    placeholder="Medical notes, observations..."
-                  />
-
-                  <TextField
-                    label="Nursing Notes"
-                    value={currentAppointment.nursingNotes}
-                    onChange={(e) =>
-                      setCurrentAppointment({ ...currentAppointment, nursingNotes: e.target.value })
-                    }
-                    fullWidth
-                    multiline
-                    rows={2}
-                    placeholder="Preparation instructions, vital signs..."
-                  />
-
-                  <FormControl fullWidth size="small">
-                    <InputLabel>Preparation Status</InputLabel>
-                    <Select
-                      value={currentAppointment.preparationStatus}
-                      label="Preparation Status"
-                      onChange={(e) =>
-                        setCurrentAppointment({ ...currentAppointment, preparationStatus: e.target.value })
-                      }
-                    >
-                      {preparationStatuses.map(status => (
-                        <MenuItem key={status} value={status}>{status}</MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                </Stack>
-              </Grid>
-            </Grid>
-          </DialogContent>
-          <DialogActions sx={{ px: 3, pb: 3 }}>
-            <Button 
-              onClick={() => setOpen(false)}
-              sx={{ textTransform: 'none' }}
+          <FormControl fullWidth size="small">
+            <InputLabel>Doctor *</InputLabel>
+            <Select
+              value={currentAppointment.doctorId}
+              label="Doctor *"
+              onChange={(e) =>
+                setCurrentAppointment({ ...currentAppointment, doctorId: e.target.value })
+              }
+              required
             >
-              Cancel
-            </Button>
-            <Button 
-              variant="contained" 
-              onClick={editing ? updateAppointment : saveAppointment}
-              disabled={!currentAppointment.patientId || !currentAppointment.doctorId || 
-                       !currentAppointment.date || !currentAppointment.time}
-              sx={{
-                textTransform: 'none',
-                px: 3,
-                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                '&:hover': {
-                  background: 'linear-gradient(135deg, #5568d3 0%, #65408b 100%)'
-                }
-              }}
-            >
-              {editing ? 'Update Appointment' : 'Schedule Appointment'}
-            </Button>
-          </DialogActions>
-        </Dialog>
+              <MenuItem value="">Select Doctor</MenuItem>
+              {doctors.map(doctor => {
+                // Try different possible property paths
+                const doctorId = doctor._id || doctor.user?._id || doctor.id;
+                const doctorName = doctor.name || doctor.user?.name || `Doctor ${doctorId?.substring(0, 8)}`;
+                const specialization = doctor.specialization || doctor.doctor?.specialization || 'General';
+                
+                return (
+                  <MenuItem key={doctorId} value={doctorId}>
+                    {doctorName} ({specialization})
+                  </MenuItem>
+                );
+              })}
+            </Select>
+          </FormControl>
 
+          <DatePicker
+            label="Appointment Date *"
+            value={currentAppointment.date}
+            onChange={(newValue) =>
+              setCurrentAppointment({ ...currentAppointment, date: newValue })
+            }
+            slotProps={{ textField: { fullWidth: true, size: 'small', required: true } }}
+          />
+
+          <FormControl fullWidth size="small">
+            <InputLabel>Time Slot *</InputLabel>
+            <Select
+              value={currentAppointment.time}
+              label="Time Slot *"
+              onChange={(e) =>
+                setCurrentAppointment({ ...currentAppointment, time: e.target.value })
+              }
+              required
+            >
+              {timeSlots.map(time => (
+                <MenuItem key={time} value={time}>{formatTime(time)}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Stack>
+      </Grid>
+
+      <Grid item xs={12} md={6}>
+        <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>
+          Additional Information
+        </Typography>
+        <Stack spacing={2}>
+          <TextField
+            label="Reason for Visit"
+            value={currentAppointment.reason}
+            onChange={(e) =>
+              setCurrentAppointment({ ...currentAppointment, reason: e.target.value })
+            }
+            fullWidth
+            multiline
+            rows={2}
+            placeholder="e.g., Follow-up, Checkup, Emergency"
+          />
+
+          <TextField
+            label="Doctor's Notes"
+            value={currentAppointment.notes}
+            onChange={(e) =>
+              setCurrentAppointment({ ...currentAppointment, notes: e.target.value })
+            }
+            fullWidth
+            multiline
+            rows={2}
+            placeholder="Medical notes, observations..."
+          />
+
+          <TextField
+            label="Nursing Notes"
+            value={currentAppointment.nursingNotes}
+            onChange={(e) =>
+              setCurrentAppointment({ ...currentAppointment, nursingNotes: e.target.value })
+            }
+            fullWidth
+            multiline
+            rows={2}
+            placeholder="Preparation instructions, vital signs..."
+          />
+
+          <FormControl fullWidth size="small">
+            <InputLabel>Preparation Status</InputLabel>
+            <Select
+              value={currentAppointment.preparationStatus}
+              label="Preparation Status"
+              onChange={(e) =>
+                setCurrentAppointment({ ...currentAppointment, preparationStatus: e.target.value })
+              }
+            >
+              {preparationStatuses.map(status => (
+                <MenuItem key={status} value={status}>{status}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          {formError && (
+  <p
+    style={{
+      color: 'red',
+      marginBottom: '12px',
+      fontSize: '14px',
+      textAlign: 'center'
+    }}
+  >
+    {formError}
+  </p>
+)}
+
+        </Stack>
+      </Grid>
+    </Grid>
+  </DialogContent>
+  <DialogActions sx={{ px: 3, pb: 3 }}>
+    <Button 
+      onClick={() => setOpen(false)}
+      sx={{ textTransform: 'none' }}
+    >
+      Cancel
+    </Button>
+    <Button 
+      variant="contained" 
+      onClick={editing ? updateAppointment : saveAppointment}
+      // Temporarily remove disabled condition for testing
+      // disabled={!currentAppointment.patientId || !currentAppointment.doctorId || 
+      //          !currentAppointment.date || !currentAppointment.time}
+      sx={{
+        textTransform: 'none',
+        px: 3,
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        '&:hover': {
+          background: 'linear-gradient(135deg, #5568d3 0%, #65408b 100%)'
+        }
+      }}
+    >
+      {editing ? 'Update Appointment' : 'Schedule Appointment'}
+    </Button>
+  </DialogActions>
+</Dialog>
         {/* View Appointment Details Dialog */}
         <Dialog 
           open={openView} 
@@ -1813,14 +1901,14 @@ const Appointments = () => {
                             <Stack spacing={2}>
                               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                                 <Avatar sx={{ width: 60, height: 60, bgcolor: alpha('#3b82f6', 0.8) }}>
-                                  {appointmentDetails.patient.userId?.name?.charAt(0) || 'P'}
+                                  {appointmentDetails.patient.name?.charAt(0) || 'P'}
                                 </Avatar>
                                 <Box>
                                   <Typography variant="h6">
-                                    {appointmentDetails.patient.userId?.name}
+                                    {appointmentDetails.patient.name}
                                   </Typography>
                                   <Typography variant="body2" color="text.secondary">
-                                    {appointmentDetails.patient.userId?.email}
+                                    {appointmentDetails.patient.email}
                                   </Typography>
                                 </Box>
                               </Box>
@@ -1831,7 +1919,7 @@ const Appointments = () => {
                                     Phone
                                   </Typography>
                                   <Typography variant="body1">
-                                    {appointmentDetails.patient.userId?.phone || 'N/A'}
+                                    {appointmentDetails.patient.phone || 'N/A'}
                                   </Typography>
                                 </Grid>
                                 <Grid item xs={6}>
@@ -1873,11 +1961,11 @@ const Appointments = () => {
                             <Stack spacing={2}>
                               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                                 <Avatar sx={{ width: 60, height: 60, bgcolor: alpha('#10b981', 0.8) }}>
-                                  {appointmentDetails.doctor.userId?.name?.charAt(0) || 'D'}
+                                  {appointmentDetails.doctor.name?.charAt(0) || 'D'}
                                 </Avatar>
                                 <Box>
                                   <Typography variant="h6">
-                                    {appointmentDetails.doctor.userId?.name}
+                                    {appointmentDetails.doctor.name}
                                   </Typography>
                                   <Typography variant="body2" color="text.secondary">
                                     {appointmentDetails.doctor.specialization}
@@ -1907,7 +1995,7 @@ const Appointments = () => {
                                     Contact
                                   </Typography>
                                   <Typography variant="body1">
-                                    {appointmentDetails.doctor.userId?.email || 'N/A'}
+                                    {appointmentDetails.doctor.email || 'N/A'}
                                   </Typography>
                                 </Grid>
                               </Grid>

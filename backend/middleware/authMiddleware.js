@@ -58,3 +58,28 @@ exports.authorize = (...roles) => {
     next();
   };
 };
+// Add these to your existing authMiddleware
+
+// LabTech only middleware
+exports.labTechOnly = (req, res, next) => {
+  if (req.user.role !== 'LAB_TECH') {
+    res.status(403);
+    throw new Error('Access denied. LabTech only.');
+  }
+  next();
+};
+
+// Get LabTech profile
+exports.getLabTechProfile = asyncHandler(async (req, res, next) => {
+  const labTech = await LabTech.findOne({ userId: req.user._id })
+    .populate('userId', 'name email phone')
+    .populate('wardId', 'wardNumber name');
+
+  if (!labTech) {
+    res.status(404);
+    throw new Error('LabTech profile not found');
+  }
+
+  req.labTech = labTech;
+  next();
+});

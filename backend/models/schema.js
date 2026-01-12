@@ -641,6 +641,9 @@ const nursingCareSchema = new Schema(
 /* =========================================================
    5. LAB TECH PROFILE
 ========================================================= */
+/* =========================================================
+   5. LAB TECH PROFILE
+========================================================= */
 const labTechSchema = new Schema(
   {
     userId: {
@@ -700,14 +703,27 @@ const labTechSchema = new Schema(
     // Lab equipment handling permissions
     equipmentPermissions: [{
       equipmentType: String,
-      canOperate: Boolean,
-      trainingDate: Date
+      canOperate: {
+        type: Boolean,
+        default: true
+      },
+      trainingDate: {
+        type: Date,
+        default: Date.now
+      }
     }],
 
     // Test types the lab tech is certified for
     certifiedTests: [{
       testName: String,
-      certificationDate: Date,
+      certificationDate: {
+        type: Date,
+        default: Date.now
+      },
+      issuingAuthority: {
+        type: String,
+        default: 'Internal'
+      },
       renewDate: Date
     }],
 
@@ -730,7 +746,6 @@ const labTechSchema = new Schema(
   },
   { timestamps: true }
 );
-
 /* =========================================================
    11. LAB TESTS
 ========================================================= */
@@ -749,13 +764,13 @@ const labTestSchema = new Schema(
       required: true,
       index: true
     },
-
+///////////////////////////////////////////////////////////////
     labTechId: {
-      type: Schema.Types.ObjectId,
-      ref: 'LabTech',
-      index: true
-    },
-
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',  // ✅ Should reference User, not LabTech
+    required: true
+  },
+//////////////////////////////////////////////////////////////////////
     testName: {
       type: String,
       required: true,

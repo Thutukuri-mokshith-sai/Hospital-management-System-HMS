@@ -5,13 +5,11 @@ const { asyncHandler } = require('../../middleware/errorMiddleware');
 /* =====================
    APPOINTMENT CRUD OPERATIONS
 ===================== */
-
-// Get all appointments with advanced filtering
 exports.getAllAppointments = asyncHandler(async (req, res) => {
   const {
     status,
     date,
-    doctorId,
+    doctorId,       // Patient._id or Doctor._id (NOT userId)
     patientId,
     department,
     specialization,
@@ -24,18 +22,21 @@ exports.getAllAppointments = asyncHandler(async (req, res) => {
     sortOrder = 'desc'
   } = req.query;
 
+  /* ================= BASE QUERY ================= */
   const query = {};
 
-  /* ================= BASIC FILTERS ================= */
   if (status) query.status = status;
   if (doctorId) query.doctorId = doctorId;
   if (patientId) query.patientId = patientId;
 
+  /* ================= SINGLE DATE FILTER ================= */
   if (date) {
     const startOfDay = new Date(date);
     startOfDay.setHours(0, 0, 0, 0);
+
     const endOfDay = new Date(date);
     endOfDay.setHours(23, 59, 59, 999);
+
     query.date = { $gte: startOfDay, $lte: endOfDay };
   }
 
@@ -54,9 +55,6 @@ exports.getAllAppointments = asyncHandler(async (req, res) => {
     }
   }
 
-  /* ================= SEARCH ================= */
-  // We'll handle search after population for patient/doctor names
-
   /* ================= DEPARTMENT / SPECIALIZATION ================= */
   if (department || specialization) {
     const doctorQuery = {};
@@ -66,9 +64,7 @@ exports.getAllAppointments = asyncHandler(async (req, res) => {
     const doctors = await Doctor.find(doctorQuery).select('_id').lean();
     const doctorIds = doctors.map(d => d._id);
 
-    if (doctorIds.length > 0) {
-      query.doctorId = { $in: doctorIds };
-    } else {
+    if (!doctorIds.length) {
       return res.status(200).json({
         success: true,
         count: 0,
@@ -85,36 +81,39 @@ exports.getAllAppointments = asyncHandler(async (req, res) => {
         data: []
       });
     }
+
+    query.doctorId = { $in: doctorIds };
   }
 
   /* ================= SORT ================= */
-  const sort = { [sortBy]: sortOrder === 'desc' ? -1 : 1 };
+  const sort =
+    sortBy === 'patient' || sortBy === 'doctor'
+      ? {}
+      : { [sortBy]: sortOrder === 'desc' ? -1 : 1 };
 
   /* ================= PAGINATION ================= */
   const pageNum = Math.max(parseInt(page), 1);
   const limitNum = Math.max(parseInt(limit), 1);
   const skip = (pageNum - 1) * limitNum;
 
-  /* ================= FETCH APPOINTMENTS WITH PROPER POPULATION ================= */
+  /* ================= FETCH APPOINTMENTS ================= */
   const appointments = await Appointment.find(query)
     .populate({
       path: 'patientId',
       select: 'userId age gender bloodGroup wardId bedNumber admissionStatus',
-      // Populate the User from Patient's userId
       populate: {
         path: 'userId',
         model: 'User',
-        select: 'name email phone role'
+        select: 'name email phone'
       }
     })
     .populate({
       path: 'doctorId',
       select: 'userId specialization department',
-      // Populate the User from Doctor's userId
       populate: {
         path: 'userId',
         model: 'User',
-        select: 'name email phone role'
+        select: 'name email phone'
       }
     })
     .sort(sort)
@@ -122,92 +121,40 @@ exports.getAllAppointments = asyncHandler(async (req, res) => {
     .limit(limitNum)
     .lean();
 
-  /* ================= APPLY SEARCH FILTER AFTER POPULATION ================= */
+  /* ================= SEARCH (POST-POPULATION) ================= */
   let filteredAppointments = appointments;
+
   if (search) {
-    filteredAppointments = appointments.filter(appointment => {
-      const searchLower = search.toLowerCase();
-      
-      // Check appointment fields
-      const matchesAppointmentFields = 
-        (appointment.reason && appointment.reason.toLowerCase().includes(searchLower)) ||
-        (appointment.notes && appointment.notes.toLowerCase().includes(searchLower)) ||
-        (appointment.nursingNotes && appointment.nursingNotes.toLowerCase().includes(searchLower));
-      
-      // Check patient name
-      const patientName = appointment.patientId?.userId?.name || '';
-      const matchesPatientName = patientName.toLowerCase().includes(searchLower);
-      
-      // Check doctor name
-      const doctorName = appointment.doctorId?.userId?.name || '';
-      const matchesDoctorName = doctorName.toLowerCase().includes(searchLower);
-      
-      // Check patient phone
-      const patientPhone = appointment.patientId?.userId?.phone || '';
-      const matchesPatientPhone = patientPhone.includes(search);
-      
-      // Check doctor phone
-      const doctorPhone = appointment.doctorId?.userId?.phone || '';
-      const matchesDoctorPhone = doctorPhone.includes(search);
-      
-      return matchesAppointmentFields || matchesPatientName || matchesDoctorName || 
-             matchesPatientPhone || matchesDoctorPhone;
+    const searchLower = search.toLowerCase();
+
+    filteredAppointments = appointments.filter(a => {
+      return (
+        a.reason?.toLowerCase().includes(searchLower) ||
+        a.notes?.toLowerCase().includes(searchLower) ||
+        a.nursingNotes?.toLowerCase().includes(searchLower) ||
+        a.patientId?.userId?.name?.toLowerCase().includes(searchLower) ||
+        a.doctorId?.userId?.name?.toLowerCase().includes(searchLower) ||
+        a.patientId?.userId?.phone?.includes(search) ||
+        a.doctorId?.userId?.phone?.includes(search)
+      );
     });
   }
 
   /* ================= ENHANCE APPOINTMENTS ================= */
   const enhancedAppointments = await Promise.all(
     filteredAppointments.map(async (appointment) => {
-      // Check for prescription
       const prescriptionExists = await Prescription.exists({
         appointmentId: appointment._id
       });
 
-      // Get billing info
       const billing = await Billing.findOne(
         { appointmentId: appointment._id },
         'paymentStatus amount'
       ).lean();
 
-      // Calculate revenue
-      let revenue = 0;
-      if (billing) {
-        revenue = billing.amount || 0;
-      } else if (appointment.status === 'Completed') {
-        revenue = 100; // Default fee for completed appointments
-      }
-
-      // Extract patient details safely
-      let patientDetails = {};
-      if (appointment.patientId) {
-        patientDetails = {
-          _id: appointment.patientId._id,
-          userId: appointment.patientId.userId?._id,
-          name: appointment.patientId.userId?.name || 'Unknown',
-          email: appointment.patientId.userId?.email,
-          phone: appointment.patientId.userId?.phone,
-          age: appointment.patientId.age,
-          gender: appointment.patientId.gender,
-          bloodGroup: appointment.patientId.bloodGroup,
-          wardId: appointment.patientId.wardId,
-          bedNumber: appointment.patientId.bedNumber,
-          admissionStatus: appointment.patientId.admissionStatus
-        };
-      }
-
-      // Extract doctor details safely
-      let doctorDetails = {};
-      if (appointment.doctorId) {
-        doctorDetails = {
-          _id: appointment.doctorId._id,
-          userId: appointment.doctorId.userId?._id,
-          name: appointment.doctorId.userId?.name || 'Unknown',
-          email: appointment.doctorId.userId?.email,
-          phone: appointment.doctorId.userId?.phone,
-          specialization: appointment.doctorId.specialization,
-          department: appointment.doctorId.department
-        };
-      }
+      const revenue =
+        billing?.amount ||
+        (appointment.status === 'Completed' ? 100 : 0);
 
       return {
         _id: appointment._id,
@@ -220,107 +167,85 @@ exports.getAllAppointments = asyncHandler(async (req, res) => {
         preparationStatus: appointment.preparationStatus,
         createdAt: appointment.createdAt,
         updatedAt: appointment.updatedAt,
-        
-        // Patient details
-        patient: patientDetails,
-        
-        // Doctor details
-        doctor: doctorDetails,
-        
-        // Additional info
+
+        patient: appointment.patientId
+          ? {
+              _id: appointment.patientId._id,
+              userId: appointment.patientId.userId?._id,
+              name: appointment.patientId.userId?.name,
+              email: appointment.patientId.userId?.email,
+              phone: appointment.patientId.userId?.phone,
+              age: appointment.patientId.age,
+              gender: appointment.patientId.gender,
+              bloodGroup: appointment.patientId.bloodGroup,
+              wardId: appointment.patientId.wardId,
+              bedNumber: appointment.patientId.bedNumber,
+              admissionStatus: appointment.patientId.admissionStatus
+            }
+          : null,
+
+        doctor: appointment.doctorId
+          ? {
+              _id: appointment.doctorId._id,
+              userId: appointment.doctorId.userId?._id,
+              name: appointment.doctorId.userId?.name,
+              email: appointment.doctorId.userId?.email,
+              phone: appointment.doctorId.userId?.phone,
+              specialization: appointment.doctorId.specialization,
+              department: appointment.doctorId.department
+            }
+          : null,
+
         hasPrescription: !!prescriptionExists,
         hasBilling: !!billing,
         billingStatus: billing?.paymentStatus || 'Not Billed',
-        revenue: revenue,
+        revenue,
         lastUpdatedBy: appointment.lastUpdatedBy
       };
     })
   );
 
-  /* ================= MANUAL SORTING FOR POPULATED FIELDS ================= */
+  /* ================= MANUAL SORT (POPULATED FIELDS) ================= */
   if (sortBy === 'patient' || sortBy === 'doctor') {
     enhancedAppointments.sort((a, b) => {
-      let aValue, bValue;
-      
-      if (sortBy === 'patient') {
-        aValue = a.patient?.name || '';
-        bValue = b.patient?.name || '';
-      } else if (sortBy === 'doctor') {
-        aValue = a.doctor?.name || '';
-        bValue = b.doctor?.name || '';
-      }
-      
-      aValue = aValue.toLowerCase();
-      bValue = bValue.toLowerCase();
-      
-      if (sortOrder === 'desc') {
-        return bValue.localeCompare(aValue);
-      } else {
-        return aValue.localeCompare(bValue);
-      }
+      const aVal =
+        sortBy === 'patient' ? a.patient?.name || '' : a.doctor?.name || '';
+      const bVal =
+        sortBy === 'patient' ? b.patient?.name || '' : b.doctor?.name || '';
+
+      return sortOrder === 'desc'
+        ? bVal.localeCompare(aVal)
+        : aVal.localeCompare(bVal);
     });
   }
 
-  /* ================= GET TOTAL COUNT ================= */
-  // We need to apply search filter to total count too
-  let total = appointments.length;
-  if (search) {
-    total = filteredAppointments.length;
-  } else {
-    total = await Appointment.countDocuments(query);
-  }
+  /* ================= TOTAL COUNT ================= */
+  const total = search
+    ? filteredAppointments.length
+    : await Appointment.countDocuments(query);
 
-  /* ================= SUMMARY CALCULATION ================= */
-  // Get all appointment IDs for the query
-  let allAppointmentIds;
-  if (search) {
-    allAppointmentIds = filteredAppointments.map(a => a._id);
-  } else {
-    const allAppointments = await Appointment.find(query).select('_id status').lean();
-    allAppointmentIds = allAppointments.map(a => a._id);
-  }
-
-  // Get billing amounts for revenue calculation
-  let totalRevenue = 0;
-  if (allAppointmentIds.length > 0) {
-    const billingAgg = await Billing.aggregate([
-      {
-        $match: {
-          appointmentId: { $in: allAppointmentIds }
-        }
-      },
-      {
-        $group: {
-          _id: null,
-          totalRevenue: { $sum: '$amount' }
-        }
-      }
-    ]);
-    totalRevenue = billingAgg[0]?.totalRevenue || 0;
-  }
-
-  // Calculate status counts
+  /* ================= SUMMARY ================= */
   const summary = {
-    total: allAppointmentIds.length,
+    total,
     scheduled: 0,
     completed: 0,
     cancelled: 0,
-    totalRevenue: totalRevenue
+    totalRevenue: 0
   };
 
-  // Count statuses from filtered appointments
-  filteredAppointments.forEach(appointment => {
-    if (appointment.status === 'Scheduled') summary.scheduled++;
-    if (appointment.status === 'Completed') summary.completed++;
-    if (appointment.status === 'Cancelled') summary.cancelled++;
+  enhancedAppointments.forEach(a => {
+    if (a.status === 'Scheduled') summary.scheduled++;
+    if (a.status === 'Completed') summary.completed++;
+    if (a.status === 'Cancelled') summary.cancelled++;
+    summary.totalRevenue += a.revenue || 0;
   });
 
   /* ================= RESPONSE ================= */
   res.status(200).json({
     success: true,
     count: enhancedAppointments.length,
-    total: summary.total,
-    totalPages: Math.ceil(summary.total / limitNum),
+    total,
+    totalPages: Math.ceil(total / limitNum),
     currentPage: pageNum,
     summary,
     data: enhancedAppointments,
@@ -341,6 +266,7 @@ exports.getAllAppointments = asyncHandler(async (req, res) => {
     }
   });
 });
+
 // Get single appointment details
 exports.getAppointmentById = asyncHandler(async (req, res) => {
   const { id } = req.params;
@@ -403,46 +329,58 @@ exports.getAppointmentById = asyncHandler(async (req, res) => {
 
 // Create new appointment
 exports.createAppointment = asyncHandler(async (req, res) => {
-  const { 
-    patientId, 
-    doctorId, 
-    date, 
-    time, 
-    reason, 
+  const {
+    patientId,       // USER ID (from request)
+    doctorId,        // USER ID (from request)
+    date,
+    time,
+    reason,
     notes,
     nursingNotes,
-    preparationStatus 
+    preparationStatus
   } = req.body;
 
+  // -----------------------------
   // Validation
+  // -----------------------------
   if (!patientId || !doctorId || !date || !time) {
     res.status(400);
     throw new Error('Patient ID, Doctor ID, date, and time are required');
   }
 
-  // Validate patient
+  // -----------------------------
+  // Validate Patient (by USER ID)
+  // -----------------------------
   const patient = await Patient.findOne({ userId: patientId });
   if (!patient) {
     res.status(404);
     throw new Error('Patient not found');
   }
 
-  // Validate doctor
+  // -----------------------------
+  // Validate Doctor (by USER ID)
+  // -----------------------------
   const doctor = await Doctor.findOne({ userId: doctorId });
   if (!doctor) {
     res.status(404);
     throw new Error('Doctor not found');
   }
 
-  // Check for conflicting appointments
+  // -----------------------------
+  // Date Range (Same Day)
+  // -----------------------------
   const appointmentDate = new Date(date);
   const startOfDay = new Date(appointmentDate);
   startOfDay.setHours(0, 0, 0, 0);
+
   const endOfDay = new Date(appointmentDate);
   endOfDay.setHours(23, 59, 59, 999);
 
+  // -----------------------------
+  // Check Doctor Availability
+  // -----------------------------
   const existingDoctorAppointment = await Appointment.findOne({
-    doctorId,
+    doctorId: doctor._id,
     date: { $gte: startOfDay, $lte: endOfDay },
     time,
     status: 'Scheduled'
@@ -453,9 +391,11 @@ exports.createAppointment = asyncHandler(async (req, res) => {
     throw new Error('Doctor already has a scheduled appointment at this time');
   }
 
-  // Check patient availability
+  // -----------------------------
+  // Check Patient Availability
+  // -----------------------------
   const existingPatientAppointment = await Appointment.findOne({
-    patientId,
+    patientId: patient._id,
     date: { $gte: startOfDay, $lte: endOfDay },
     time,
     status: 'Scheduled'
@@ -466,9 +406,12 @@ exports.createAppointment = asyncHandler(async (req, res) => {
     throw new Error('Patient already has a scheduled appointment at this time');
   }
 
-  const appointmentData = {
-    patientId,
-    doctorId,
+  // -----------------------------
+  // Create Appointment
+  // -----------------------------
+  const appointment = await Appointment.create({
+    patientId: patient._id,     // ✅ Patient ObjectId
+    doctorId: doctor._id,       // ✅ Doctor ObjectId
     date: appointmentDate,
     time,
     reason,
@@ -476,15 +419,16 @@ exports.createAppointment = asyncHandler(async (req, res) => {
     nursingNotes,
     preparationStatus: preparationStatus || 'Not Started',
     lastUpdatedBy: {
-      role: req.user.role || 'ADMIN',
-      userId: req.user._id,
-      name: req.user.name,
+      role: req.user?.role || 'ADMIN',
+      userId: req.user?._id,
+      name: req.user?.name,
       updatedAt: new Date()
     }
-  };
+  });
 
-  const appointment = await Appointment.create(appointmentData);
-
+  // -----------------------------
+  // Populate Response
+  // -----------------------------
   const populatedAppointment = await Appointment.findById(appointment._id)
     .populate({
       path: 'patientId',
@@ -502,6 +446,9 @@ exports.createAppointment = asyncHandler(async (req, res) => {
     })
     .lean();
 
+  // -----------------------------
+  // Response
+  // -----------------------------
   res.status(201).json({
     success: true,
     message: 'Appointment created successfully',

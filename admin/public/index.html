@@ -3,8 +3,12 @@
   <head>
     <meta charset="utf-8" />
 
-    <!-- Favicon: Bootstrap Medical Plus Icon -->
-    <link rel="icon" type="image/svg+xml" href="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTjD47HYVkW33ET40bdF-bc72fEIJWVaEVqSg&s" />
+    <!-- Favicon -->
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTjD47HYVkW33ET40bdF-bc72fEIJWVaEVqSg&s"
+    />
 
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#1976d2" />
@@ -16,21 +20,40 @@
     />
 
     <!-- Apple Touch Icon -->
-    <link rel="apple-touch-icon" href="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTjD47HYVkW33ET40bdF-bc72fEIJWVaEVqSg&s" />
+    <link
+      rel="apple-touch-icon"
+      href="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTjD47HYVkW33ET40bdF-bc72fEIJWVaEVqSg&s"
+    />
 
     <!-- Web App Manifest -->
     <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
 
-    <!-- Optional: Bootstrap Icons CDN (for UI usage) -->
+    <!-- Bootstrap Icons -->
     <link
       href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css"
       rel="stylesheet"
     />
 
+    <!-- ✅ Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Optional Tailwind Custom Config -->
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              primary: "#1976d2",
+            },
+          },
+        },
+      };
+    </script>
+
     <title>Hospital Management System</title>
   </head>
 
-  <body>
+  <body class="bg-gray-50 text-gray-900">
     <noscript>
       JavaScript is required to run the Hospital Management System.
     </noscript>

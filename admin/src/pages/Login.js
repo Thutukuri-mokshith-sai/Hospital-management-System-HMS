@@ -39,7 +39,8 @@ const Login = () => {
           'PATIENT': '/patient/dashboard',
           'DOCTOR': '/doctor/dashboard',
           'NURSE': '/nurse/dashboard',
-          'ADMIN': '/dashboard'
+          'ADMIN': 'admin/dashboard',
+          'LAB_TECH':'/labtech/dashboard'
         };
 
         navigate(routes[user.role] || '/dashboard');

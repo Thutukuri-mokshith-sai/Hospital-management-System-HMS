@@ -1,0 +1,8 @@
+<Route path="dashboard" element={<DoctorDashboard />} />
+  <Route path="patients" element={<DoctorPatients />} />
+  <Route path="appointments" element={<DoctorAppointments />} />
+  <Route path="prescriptions" element={<DoctorPrescriptions />} />
+  <Route path="lab-tests" element={<DoctorLabTests />} />
+  <Route path="admitted" element={<AdmittedPatients />} />
+  <Route path="settings" element={<DoctorSettings />} />
+  <Route path="profile" element={<DoctorProfile />} />
