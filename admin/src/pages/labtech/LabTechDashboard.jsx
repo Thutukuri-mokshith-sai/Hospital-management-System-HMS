@@ -79,9 +79,8 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import axios from 'axios';
 import { format, parseISO, differenceInHours, differenceInMinutes } from 'date-fns';
-
+import { BASE_URL } from '../../api/api';
 // Base URL from your API
-const BASE_URL = 'http://localhost:5000/api/v1';
 
 const LabTechDashboard = () => {
   const { user } = useAuth();

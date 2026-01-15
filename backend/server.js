@@ -8,8 +8,9 @@ const { errorHandler } = require('./middleware/errorMiddleware');
 const authRoutes = require('./routes/authRoutes');
 const adminRoutes = require('./routes/crudadmin');
 const wardRoutes = require('./routes/wardRoutes');
-const doctorRoutes = require('./routes/doctors/doctorRoutes'); // Add this line
-const labTechRoutes = require('./routes/labtech/labTechRoutes'); // Add this line
+const doctorRoutes = require('./routes/doctors/doctorRoutes');
+const labTechRoutes = require('./routes/labtech/labTechRoutes');
+
 // Create Express app
 const app = express();
 
@@ -30,19 +31,21 @@ app.get('/', (req, res) => {
       auth: '/api/v1/auth',
       admin: '/api/v1/admin',
       wards: '/api/v1/wards',
-      doctors: '/api/v1/doctors' // Add this
+      doctors: '/api/v1/doctors',
+      labtech: '/api/v1/labtech'
     }
   });
 });
 
-// API Routes
+// API Routes - Fixed the path to use Express Router properly
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/admin', adminRoutes);
 app.use('/api/v1/wards', wardRoutes);
-app.use('/api/v1/doctors', doctorRoutes); // Add this line
-app.use('/api/v1/labtech', labTechRoutes); // Add this line
+app.use('/api/v1/doctors', doctorRoutes);
+app.use('/api/v1/labtech', labTechRoutes);
+
 // 4. 404 Handler
-app.use((req, res, next) => {
+app.use( (req, res) => {
   res.status(404).json({
     success: false,
     message: `Route ${req.originalUrl} not found`
@@ -58,4 +61,5 @@ app.listen(PORT, () => {
   console.log(`✅ Server running on port ${PORT}`);
   console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`🔗 API Base URL: http://localhost:${PORT}`);
+  console.log(`👨‍⚕️  Doctor API: http://localhost:${PORT}/api/v1/doctors`);
 });

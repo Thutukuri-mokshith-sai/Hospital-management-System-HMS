@@ -765,11 +765,11 @@ const labTestSchema = new Schema(
       index: true
     },
 ///////////////////////////////////////////////////////////////
-    labTechId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',  // ✅ Should reference User, not LabTech
-    required: true
-  },
+   labTechId: {
+      type: Schema.Types.ObjectId,  // ✅ Fixed: Use Schema.Types.ObjectId
+      ref: 'LabTech',               // ✅ Fixed: Reference LabTech model
+      required: false
+    },
 //////////////////////////////////////////////////////////////////////
     testName: {
       type: String,

@@ -74,8 +74,7 @@ import {
 } from '@mui/icons-material';
 import axios from 'axios';
 import { format, parseISO } from 'date-fns';
-
-const BASE_URL = 'http://localhost:5000/api/v1';
+import { BASE_URL } from '../../api/api';
 
 const LabTechProfile = () => {
   const [profile, setProfile] = useState(null);

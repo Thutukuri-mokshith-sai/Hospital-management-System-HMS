@@ -62,8 +62,7 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import axios from 'axios';
 import { format, subDays, parseISO, differenceInHours, differenceInMinutes } from 'date-fns';
-
-const BASE_URL = 'http://localhost:5000/api/v1';
+import { BASE_URL } from '../../api/api';
 
 const LabTechHistory = () => {
   const [tests, setTests] = useState([]);

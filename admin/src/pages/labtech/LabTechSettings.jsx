@@ -272,8 +272,7 @@ import {
 import axios from 'axios';
 import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
-
-const BASE_URL = 'http://localhost:5000/api/v1';
+import { BASE_URL } from '../../api/api';
 
 // Equipment types with icons
 const EQUIPMENT_TYPES = [

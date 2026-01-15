@@ -69,8 +69,7 @@ import {
 } from 'recharts';
 import axios from 'axios';
 import { format, subDays, subMonths, parseISO } from 'date-fns';
-
-const BASE_URL = 'http://localhost:5000/api/v1';
+import { BASE_URL } from '../../api/api';
 
 const LabTechPerformance = () => {
   const [performanceData, setPerformanceData] = useState(null);

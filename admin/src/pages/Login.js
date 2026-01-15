@@ -39,7 +39,7 @@ const Login = () => {
           'PATIENT': '/patient/dashboard',
           'DOCTOR': '/doctor/dashboard',
           'NURSE': '/nurse/dashboard',
-          'ADMIN': 'admin/dashboard',
+          'ADMIN': '/admin/dashboard',
           'LAB_TECH':'/labtech/dashboard'
         };
 

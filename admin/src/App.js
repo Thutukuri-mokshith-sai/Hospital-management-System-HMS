@@ -16,11 +16,11 @@ import LabTechSettings from './pages/labtech/LabTechSettings';
 
 import DoctorLayout from './layouts/DoctorLayout';
 import DoctorDashboard from './pages/doctor/DoctorDashboard';
+import MySchedule from './pages/doctor/Myschedule';
 import DoctorPatients from './pages/doctor/DoctorPatients';
-// import DoctorAppointments from './pages/doctor/DoctorAppointments';
-import DoctorPrescriptions from './pages/doctor/DoctorPrescriptions';
-import DoctorLabTests from './pages/doctor/DoctorLabTests';
-// import Consultation from './pages/doctor/Consultation';
+import DoctorAppointments from './pages/doctor/DoctorAppointments';
+import DoctorClinicalActions from './pages/doctor/DoctorClinicalActions';
+import DoctorProfile from './pages/doctor/DoctorProfile';
 // Pages
 import Login from './pages/Login';
 import Signup from './pages/Signup';
@@ -114,10 +114,10 @@ function App() {
                       <Route index element={<DoctorDashboard />} />
                       <Route path="dashboard" element={<DoctorDashboard />} />
                       <Route path="patients" element={<DoctorPatients />} />
-                      {/* <Route path="appointments" element={<DoctorAppointments />} /> */}
-                      <Route path="prescriptions" element={<DoctorPrescriptions />} />
-                      <Route path="lab-tests" element={<DoctorLabTests />} />
-                      {/* <Route path="consultation/:id" element={<Consultation />} /> */}
+                      <Route path="appointments" element={<DoctorAppointments />} />
+                      <Route path='clinical-actions' element={<DoctorClinicalActions/>}/>
+                      <Route path='profile' element={<DoctorProfile/>}/>
+                      <Route path='schedule' element={<MySchedule/>}/>
                     </Route>
 
             {/* Admin */}
