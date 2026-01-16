@@ -21,7 +21,7 @@ exports.validateSignup = asyncHandler(async (req, res, next) => {
   }
 
   // Add LAB_TECH to allowed roles
-  const allowedRoles = ['PATIENT', 'DOCTOR', 'NURSE', 'ADMIN', 'LAB_TECH'];
+  const allowedRoles = ['PATIENT', 'DOCTOR', 'NURSE', 'ADMIN', 'LAB_TECH',"PHARMACIST"];
   if (!allowedRoles.includes(role)) {
     res.status(400);
     throw new Error('Invalid role specified');
