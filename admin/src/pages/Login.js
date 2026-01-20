@@ -1,240 +1,189 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import {
-  Container, Paper, TextField, Button, Typography, Box, Alert,
-  InputAdornment, IconButton, LinearProgress, Link as MuiLink,
-  Fade, Slide, Zoom, Grid, Checkbox, FormControlLabel, CssBaseline
-} from '@mui/material';
-import {
-  Email, Visibility, VisibilityOff, Lock, Login as LoginIcon,
-  LocalHospital, HealthAndSafety, EventNote, People, Analytics
-} from '@mui/icons-material';
-import { Link as RouterLink, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+  Eye,
+  EyeOff,
+  Mail,
+  Lock,
+  Hospital,
+  ShieldCheck,
+  CalendarCheck,
+  Users,
+  BarChart3,
+} from "lucide-react";
+import { useAuth } from "../context/AuthContext";
 
 const roleRoutes = {
-  PATIENT: '/patient/dashboard',
-  DOCTOR: '/doctor/dashboard',
-  NURSE: '/nurse/dashboard',
-  ADMIN: '/admin/dashboard',
-  LAB_TECH: '/labtech/dashboard',
-  PHARMACIST: '/pharmacist/dashboard'
+  PATIENT: "/patient/dashboard",
+  DOCTOR: "/doctor/dashboard",
+  NURSE: "/nurse/dashboard",
+  ADMIN: "/admin/dashboard",
+  LAB_TECH: "/labtech/dashboard",
+  PHARMACIST: "/pharmacist/dashboard",
 };
 
 const features = [
-  { icon: <HealthAndSafety />, text: 'Advanced Patient Care' },
-  { icon: <EventNote />, text: 'Smart Appointment System' },
-  { icon: <People />, text: 'Multi-Role Management' },
-  { icon: <Analytics />, text: 'Real-time Analytics' }
+  { icon: <ShieldCheck />, text: "Advanced Patient Care" },
+  { icon: <CalendarCheck />, text: "Smart Appointments" },
+  { icon: <Users />, text: "Multi-Role Management" },
+  { icon: <BarChart3 />, text: "Real-time Analytics" },
 ];
 
-const Login = () => {
+export default function Login() {
   const navigate = useNavigate();
   const { login, user } = useAuth();
 
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [mounted, setMounted] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    setMounted(true);
-    if (user) {
-      navigate(roleRoutes[user.role], { replace: true });
-    }
+    if (user) navigate(roleRoutes[user.role], { replace: true });
   }, [user, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
+    setError("");
 
     try {
-      const data = await login(email, password);
-      if (data?.success) {
-        navigate(roleRoutes[data.user.role], { replace: true });
+      const res = await login(email, password);
+      if (res?.success) {
+        navigate(roleRoutes[res.user.role], { replace: true });
       } else {
-        setError(data?.message || 'Login failed. Please check your credentials.');
+        setError(res?.message || "Invalid credentials");
       }
-    } catch (err) {
-      setError(err.response?.data?.message || 'Connection error. Please try again.');
+    } catch {
+      setError("Server error. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <Box
-      sx={{
-        minHeight: '100vh',
-        width: '100vw',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        background: 'linear-gradient(135deg, #1a237e 0%, #121858 100%)',
-        position: 'relative',
-        overflowX: 'hidden',
-        overflowY: 'auto', // Allows scrolling on small devices
-        py: { xs: 4, md: 0 } // Vertical padding for mobile scroll
-      }}
-    >
-      <CssBaseline />
-      <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 1 }}>
-        <Grid 
-          container 
-          component={Paper} 
-          elevation={24} 
-          sx={{ 
-            borderRadius: 4, 
-            overflow: 'hidden', 
-            minHeight: { xs: 'auto', md: '650px' },
-            mx: 'auto'
-          }}
-        >
-          
-          {/* LEFT COLUMN - HMS INFO */}
-          <Grid item xs={12} md={6} sx={{ 
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            display: { xs: 'none', md: 'flex' },
-            flexDirection: 'column',
-            justifyContent: 'center',
-            p: 6,
-            color: 'white'
-          }}>
-            <Slide direction="right" in={mounted} timeout={800}>
-              <Box>
-                <Zoom in={mounted} timeout={1000}>
-                  <Box sx={{ mb: 4 }}>
-                    <LocalHospital sx={{ fontSize: 60, mb: 2, filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.2))' }} />
-                    <Typography variant="h3" fontWeight="bold" gutterBottom>
-                      HMS Portal
-                    </Typography>
-                    <Typography variant="h6" sx={{ opacity: 0.8, fontWeight: 300 }}>
-                      Integrated Healthcare Management System
-                    </Typography>
-                  </Box>
-                </Zoom>
+    <div className="min-h-screen w-full grid grid-cols-1 md:grid-cols-2">
 
-                <Box sx={{ mt: 4 }}>
-                  {features.map((feature, index) => (
-                    <Fade key={index} in={mounted} timeout={1200 + index * 200}>
-                      <Box sx={{ 
-                        display: 'flex', alignItems: 'center', mb: 2, p: 2, 
-                        borderRadius: 2, background: 'rgba(255, 255, 255, 0.1)',
-                        backdropFilter: 'blur(5px)', border: '1px solid rgba(255,255,255,0.1)'
-                      }}>
-                        <Box sx={{ mr: 2, display: 'flex', color: 'white' }}>{feature.icon}</Box>
-                        <Typography variant="body1">{feature.text}</Typography>
-                      </Box>
-                    </Fade>
-                  ))}
-                </Box>
-              </Box>
-            </Slide>
-          </Grid>
+      {/* LEFT PANEL */}
+      <div className="hidden md:flex flex-col justify-center px-12 bg-gradient-to-br from-indigo-600 via-purple-600 to-indigo-800 text-white relative overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(255,255,255,0.15),transparent_60%)]" />
 
-          {/* RIGHT COLUMN - LOGIN FORM */}
-          <Grid item xs={12} md={6} sx={{ bgcolor: 'white', display: 'flex', flexDirection: 'column' }}>
-            {loading && <LinearProgress sx={{ height: 4 }} />}
-            
-            <Box sx={{ p: { xs: 4, md: 8 }, flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-              <Box sx={{ mb: 4, textAlign: { xs: 'center', md: 'left' } }}>
-                <Typography variant="h4" fontWeight="bold" color="primary.main" gutterBottom>
-                  Welcome Back
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Please enter your details to access your medical dashboard.
-                </Typography>
-              </Box>
+        <div className="relative z-10 max-w-lg space-y-10 animate-fadeIn">
+          <div>
+            <Hospital className="w-16 h-16 mb-6 drop-shadow-lg" />
+            <h1 className="text-4xl font-bold">HMS Portal</h1>
+            <p className="text-lg text-white/80 mt-2">
+              Integrated Healthcare Management System
+            </p>
+          </div>
 
-              {error && (
-                <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>
-                  {error}
-                </Alert>
-              )}
+          <div className="space-y-4">
+            {features.map((f, i) => (
+              <div
+                key={i}
+                className="flex items-center gap-4 p-4 rounded-xl bg-white/15 backdrop-blur-md border border-white/20 hover:translate-x-2 transition"
+              >
+                <span className="text-2xl">{f.icon}</span>
+                <span className="font-medium">{f.text}</span>
+              </div>
+            ))}
+          </div>
 
-              <form onSubmit={handleSubmit}>
-                <TextField
-                  fullWidth
-                  label="Email Address"
-                  variant="outlined"
-                  margin="normal"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <Email color="action" />
-                      </InputAdornment>
-                    ),
-                  }}
-                />
+          <p className="text-sm text-white/80 leading-relaxed">
+            Secure, scalable, and designed for modern hospitals and healthcare professionals.
+          </p>
+        </div>
+      </div>
 
-                <TextField
-                  fullWidth
-                  label="Password"
-                  type={showPassword ? 'text' : 'password'}
-                  variant="outlined"
-                  margin="normal"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <Lock color="action" />
-                      </InputAdornment>
-                    ),
-                    endAdornment: (
-                      <InputAdornment position="end">
-                        <IconButton onClick={() => setShowPassword(!showPassword)} edge="end">
-                          {showPassword ? <VisibilityOff /> : <Visibility />}
-                        </IconButton>
-                      </InputAdornment>
-                    ),
-                  }}
-                />
+      {/* RIGHT PANEL */}
+      <div className="flex items-center justify-center px-6 sm:px-10">
+        <div className="w-full max-w-md space-y-8 animate-slideUp">
 
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1 }}>
-                  <FormControlLabel
-                    control={<Checkbox size="small" color="primary" />}
-                    label={<Typography variant="body2">Remember me</Typography>}
-                  />
-                </Box>
+          <div>
+            <h2 className="text-3xl font-bold text-indigo-600">
+              Welcome Back
+            </h2>
+            <p className="text-gray-500 mt-2">
+              Login to access your medical dashboard
+            </p>
+          </div>
 
-                <Button
-                  fullWidth
-                  type="submit"
-                  variant="contained"
-                  size="large"
-                  disabled={loading}
-                  startIcon={!loading && <LoginIcon />}
-                  sx={{ 
-                    mt: 4, py: 1.5, borderRadius: 2, fontWeight: 'bold',
-                    textTransform: 'none', fontSize: '1rem',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
-                  }}
-                >
-                  {loading ? 'Authenticating...' : 'Sign In'}
-                </Button>
-              </form>
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-600 p-3 rounded-lg">
+              {error}
+            </div>
+          )}
 
-              <Box sx={{ mt: 4, textAlign: 'center' }}>
-                <Typography variant="body2" color="text.secondary">
-                  New to our hospital?{' '}
-                  <MuiLink component={RouterLink} to="/signup" sx={{ fontWeight: 'bold', textDecoration: 'none' }}>
-                    Create an account
-                  </MuiLink>
-                </Typography>
-              </Box>
-            </Box>
-          </Grid>
-        </Grid>
-      </Container>
-    </Box>
+          <form onSubmit={handleSubmit} className="space-y-5">
+
+            {/* Email */}
+            <div className="relative">
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input
+                type="email"
+                required
+                placeholder="Email Address"
+                className="w-full pl-10 pr-4 py-3 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
+
+            {/* Password */}
+            <div className="relative">
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input
+                type={showPassword ? "text" : "password"}
+                required
+                placeholder="Password"
+                className="w-full pl-10 pr-10 py-3 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
+              >
+                {showPassword ? <EyeOff /> : <Eye />}
+              </button>
+            </div>
+
+            {/* Remember & Forgot */}
+            <div className="flex justify-between items-center text-sm">
+              <label className="flex items-center gap-2">
+                <input type="checkbox" className="rounded text-indigo-600" />
+                Remember me
+              </label>
+              <Link
+                to="/forgot-password"
+                className="text-indigo-600 font-medium hover:underline"
+              >
+                Forgot password?
+              </Link>
+            </div>
+
+            {/* Button */}
+            <button
+              disabled={loading}
+              className="w-full py-3 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition shadow-lg disabled:opacity-60"
+            >
+              {loading ? "Authenticating..." : "Sign In"}
+            </button>
+          </form>
+
+          <p className="text-center text-sm text-gray-500">
+            New to our hospital?{" "}
+            <Link
+              to="/signup"
+              className="text-indigo-600 font-semibold hover:underline"
+            >
+              Create an account
+            </Link>
+          </p>
+        </div>
+      </div>
+    </div>
   );
-};
-
-export default Login;
+}
