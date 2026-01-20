@@ -38,9 +38,7 @@ import {
   Area
 } from 'recharts';
 import axios from 'axios';
-
-// Base URL for API calls
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api/v1';
+import { BASE_URL } from '../../api/api';
 
 const PatientDashboard = () => {
   const [dashboardData, setDashboardData] = useState(null);
@@ -80,7 +78,7 @@ const PatientDashboard = () => {
       setLoading(true);
       setError('');
       
-      const response = await axios.get(`${API_BASE_URL}/patients/dashboard`, {
+      const response = await axios.get(`${BASE_URL}/patients/dashboard`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }

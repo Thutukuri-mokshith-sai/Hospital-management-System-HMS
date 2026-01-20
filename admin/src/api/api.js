@@ -1,7 +1,7 @@
 // api.js - Updated with all patient-related API calls
 import axios from 'axios';
 
-export const BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api/v1';
+export const BASE_URL = 'https://hospital-management-system-hms-j3rq.onrender.com';
 
 const api = axios.create({
   baseURL: BASE_URL,

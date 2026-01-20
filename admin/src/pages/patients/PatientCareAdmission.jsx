@@ -27,9 +27,7 @@ import {
   Shield
 } from 'lucide-react';
 import axios from 'axios';
-
-// Base URL for API calls
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api/v1';
+import { BASE_URL } from '../../api/api';
 
 const PatientCareAdmission = () => {
   const [admissionInfo, setAdmissionInfo] = useState(null);
@@ -73,7 +71,7 @@ const PatientCareAdmission = () => {
       setError('');
 
       // Fetch ward info (only returns data if admitted)
-      const wardResponse = await axios.get(`${API_BASE_URL}/patients/ward-info`, {
+      const wardResponse = await axios.get(`${BASE_URL}/patients/ward-info`, {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
       });
 
@@ -84,7 +82,7 @@ const PatientCareAdmission = () => {
       }
 
       // Fetch doctors who treated the patient
-      const doctorsResponse = await axios.get(`${API_BASE_URL}/patients/doctors`, {
+      const doctorsResponse = await axios.get(`${BASE_URL}/patients/doctors`, {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
       });
 
@@ -93,7 +91,7 @@ const PatientCareAdmission = () => {
       }
 
       // Fetch nurses who cared for the patient
-      const nursesResponse = await axios.get(`${API_BASE_URL}/patients/nurses`, {
+      const nursesResponse = await axios.get(`${BASE_URL}/patients/nurses`, {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
       });
 

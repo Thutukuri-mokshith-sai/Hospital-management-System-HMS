@@ -31,7 +31,7 @@ import {
   Trash2,
   Edit
 } from 'lucide-react';
-
+import { BASE_URL } from '../../api/api';
 const DoctorClinicalActions = () => {
   const [activeTab, setActiveTab] = useState('appointments');
   const [appointments, setAppointments] = useState([]);
@@ -75,7 +75,6 @@ const DoctorClinicalActions = () => {
   });
 
   const token = localStorage.getItem('token');
-  const BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api/v1';
 
   // ============ DATA FETCHING ============
   useEffect(() => {

@@ -39,8 +39,7 @@ import {
 import { toast } from 'react-hot-toast';
 import { format, parseISO, differenceInDays } from 'date-fns';
 
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000/api/v1';
-
+import { BASE_URL } from '../../api/api';
 const PrescriptionProcessing = () => {
   const [prescriptions, setPrescriptions] = useState([]);
   const [filteredPrescriptions, setFilteredPrescriptions] = useState([]);
@@ -82,7 +81,7 @@ const PrescriptionProcessing = () => {
         })
       });
 
-      const response = await fetch(`${API_BASE}/pharmacist/prescriptions?${queryParams}`, { headers });
+      const response = await fetch(`${BASE_URL}/pharmacist/prescriptions?${queryParams}`, { headers });
       
       if (!response.ok) throw new Error('Failed to fetch prescriptions');
       
@@ -106,7 +105,7 @@ const PrescriptionProcessing = () => {
         'Content-Type': 'application/json'
       };
 
-      const response = await fetch(`${API_BASE}/pharmacist/prescriptions/${prescriptionId}`, { headers });
+      const response = await fetch(`${BASE_URL}/pharmacist/prescriptions/${prescriptionId}`, { headers });
       
       if (!response.ok) throw new Error('Failed to fetch prescription details');
       
@@ -137,7 +136,7 @@ const PrescriptionProcessing = () => {
         'Content-Type': 'application/json'
       };
 
-      const response = await fetch(`${API_BASE}/pharmacist/patients/${patientId}`, { headers });
+      const response = await fetch(`${BASE_URL}/pharmacist/patients/${patientId}`, { headers });
       
       if (response.ok) {
         const data = await response.json();
@@ -156,7 +155,7 @@ const PrescriptionProcessing = () => {
         'Content-Type': 'application/json'
       };
 
-      const response = await fetch(`${API_BASE}/pharmacist/prescriptions/${prescriptionId}/quick-process`, {
+      const response = await fetch(`${BASE_URL}/pharmacist/prescriptions/${prescriptionId}/quick-process`, {
         method: 'POST',
         headers,
         body: JSON.stringify({ discount: 0 })

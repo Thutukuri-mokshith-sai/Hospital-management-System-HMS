@@ -38,8 +38,8 @@ import {
   Legend, ResponsiveContainer, AreaChart, Area
 } from 'recharts';
 import { toast } from 'react-hot-toast';
+import { BASE_URL } from '../../api/api';
 
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000/api/v1';
 
 const DoctorDashboard = () => {
   const [stats, setStats] = useState(null);
@@ -61,10 +61,10 @@ const DoctorDashboard = () => {
       };
 
       const [statsRes, quickRes, activityRes, notifRes] = await Promise.all([
-        fetch(`${API_BASE}/doctors/dashboard/stats`, { headers }),
-        fetch(`${API_BASE}/doctors/dashboard/quick-stats`, { headers }),
-        fetch(`${API_BASE}/doctors/dashboard/activity`, { headers }),
-        fetch(`${API_BASE}/doctors/notifications?limit=10`, { headers })
+        fetch(`${BASE_URL}/doctors/dashboard/stats`, { headers }),
+        fetch(`${BASE_URL}/doctors/dashboard/quick-stats`, { headers }),
+        fetch(`${BASE_URL}/doctors/dashboard/activity`, { headers }),
+        fetch(`${BASE_URL}/doctors/notifications?limit=10`, { headers })
       ]);
 
       if (!statsRes.ok || !quickRes.ok) throw new Error('Failed to fetch data');

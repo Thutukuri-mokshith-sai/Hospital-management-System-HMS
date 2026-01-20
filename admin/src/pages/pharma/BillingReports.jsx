@@ -47,9 +47,7 @@ import {
 } from 'recharts';
 import { toast } from 'react-hot-toast';
 import { format, parseISO, startOfDay, endOfDay, subDays, startOfMonth, endOfMonth } from 'date-fns';
-
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000/api/v1';
-
+import { BASE_URL } from '../../api/api';
 const BillingReports = () => {
   const [bills, setBills] = useState([]);
   const [filteredBills, setFilteredBills] = useState([]);
@@ -84,9 +82,9 @@ const BillingReports = () => {
       };
 
       const [billsRes, salesRes, inventoryRes] = await Promise.all([
-        fetch(`${API_BASE}/pharmacist/bills?page=${currentPage}&limit=${itemsPerPage}`, { headers }),
-        fetch(`${API_BASE}/pharmacist/reports/sales?period=${reportPeriod}`, { headers }),
-        fetch(`${API_BASE}/pharmacist/reports/inventory`, { headers })
+        fetch(`${BASE_URL}/pharmacist/reports/sales?period=${reportPeriod}`, { headers }),
+        fetch(`${BASE_URL}/pharmacist/bills?page=${currentPage}&limit=${itemsPerPage}`, { headers }),
+        fetch(`${BASE_URL}/pharmacist/reports/inventory`, { headers })
       ]);
 
       if (!billsRes.ok) throw new Error('Failed to fetch bills');
@@ -117,7 +115,7 @@ const BillingReports = () => {
         'Content-Type': 'application/json'
       };
 
-      const response = await fetch(`${API_BASE}/pharmacist/bills/${billId}`, { headers });
+      const response = await fetch(`${BASE_URL}/pharmacist/bills/${billId}`, { headers });
       
       if (!response.ok) throw new Error('Failed to fetch bill details');
       
@@ -141,7 +139,7 @@ const BillingReports = () => {
         'Content-Type': 'application/json'
       };
 
-      const response = await fetch(`${API_BASE}/pharmacist/bills`, {
+      const response = await fetch(`${BASE_URL}/pharmacist/bills`, {
         method: 'POST',
         headers,
         body: JSON.stringify(billData)
@@ -171,7 +169,7 @@ const BillingReports = () => {
         'Content-Type': 'application/json'
       };
 
-      const response = await fetch(`${API_BASE}/pharmacist/bills/${billId}/payment`, {
+      const response = await fetch(`${BASE_URL}/pharmacist/bills/${billId}/payment`, {
         method: 'PUT',
         headers,
         body: JSON.stringify({
@@ -310,15 +308,15 @@ const BillingReports = () => {
       
       switch (type) {
         case 'sales':
-          url = `${API_BASE}/pharmacist/reports/sales?period=${reportPeriod}&format=${exportFormat}`;
+          url = `${BASE_URL}/pharmacist/reports/sales?period=${reportPeriod}&format=${exportFormat}`;
           filename = `sales-report-${reportPeriod}-${format(new Date(), 'yyyy-MM-dd')}`;
           break;
         case 'inventory':
-          url = `${API_BASE}/pharmacist/reports/inventory?format=${exportFormat}`;
+          url = `${BASE_URL}/pharmacist/reports/inventory?format=${exportFormat}`;
           filename = `inventory-report-${format(new Date(), 'yyyy-MM-dd')}`;
           break;
         case 'bills':
-          url = `${API_BASE}/pharmacist/bills/export?format=${exportFormat}`;
+          url = `${BASE_URL}/pharmacist/bills/export?format=${exportFormat}`;
           filename = `bills-${format(new Date(), 'yyyy-MM-dd')}`;
           break;
       }

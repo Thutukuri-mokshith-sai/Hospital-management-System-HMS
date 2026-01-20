@@ -49,7 +49,7 @@ import {
   
 } from 'recharts';
 import axios from 'axios';
-
+import { BASE_URL } from '../../api/api';
 // Color palettes
 const GRADIENT_COLORS = [
   'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
@@ -68,8 +68,6 @@ const GRADIENT_COLORS = [
 
 const STAT_COLORS = ['#667eea', '#764ba2', '#f093fb', '#4facfe', '#43e97b', '#fa709a'];
 
-// Base URL for API calls
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api/v1';
 
 const AdminDashboard = () => {
   const [stats, setStats] = useState(null);
@@ -102,7 +100,7 @@ const AdminDashboard = () => {
       setLoading(true);
       setError('');
       
-      const response = await axios.get(`${API_BASE_URL}/admin/dashboard/stats`, {
+      const response = await axios.get(`${BASE_URL}/admin/dashboard/stats`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }

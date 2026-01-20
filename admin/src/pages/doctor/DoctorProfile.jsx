@@ -16,9 +16,7 @@ import {
   Clock
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
-
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000/api/v1';
-
+import { BASE_URL } from '../../api/api';
 const DoctorProfile = () => {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -35,7 +33,7 @@ const DoctorProfile = () => {
   const fetchProfile = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_BASE}/doctors/me`, {
+      const response = await fetch(`${BASE_URL}/doctors/me`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -60,7 +58,7 @@ const DoctorProfile = () => {
   // Update profile
   const updateProfile = async () => {
     try {
-      const response = await fetch(`${API_BASE}/doctors/me`, {
+      const response = await fetch(`${BASE_URL}/doctors/me`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

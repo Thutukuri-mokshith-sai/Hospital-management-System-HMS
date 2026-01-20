@@ -61,10 +61,7 @@ import {
 } from 'recharts';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-
-// Base URL for API calls
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api/v1';
-
+import { BASE_URL } from '../../api/api';
 // Color palettes for charts
 const CHART_COLORS = {
   primary: '#4caf50',
@@ -148,26 +145,26 @@ const PatientMedicalRecords = () => {
       setError('');
       
       // Fetch prescriptions
-      const prescriptionsResponse = await axios.get(`${API_BASE_URL}/patients/prescriptions`);
+      const prescriptionsResponse = await axios.get(`${BASE_URL}/patients/prescriptions`);
       if (prescriptionsResponse.data.success) {
         setData(prev => ({ ...prev, prescriptions: prescriptionsResponse.data.data }));
       }
 
       // Fetch lab tests
-      const labTestsResponse = await axios.get(`${API_BASE_URL}/patients/lab-tests`);
+      const labTestsResponse = await axios.get(`${BASE_URL}/patients/lab-tests`);
       if (labTestsResponse.data.success) {
         setData(prev => ({ ...prev, labTests: labTestsResponse.data.data }));
       }
 
       // Fetch vitals
-      const vitalsResponse = await axios.get(`${API_BASE_URL}/patients/vitals`);
+      const vitalsResponse = await axios.get(`${BASE_URL}/patients/vitals`);
       if (vitalsResponse.data.success) {
         setData(prev => ({ ...prev, vitals: vitalsResponse.data.data }));
         processVitalTrends(vitalsResponse.data.data);
       }
 
       // Fetch medical history summary
-      const historyResponse = await axios.get(`${API_BASE_URL}/patients/medical-history`);
+      const historyResponse = await axios.get(`${BASE_URL}/patients/medical-history`);
       if (historyResponse.data.success) {
         setData(prev => ({ 
           ...prev, 
@@ -230,7 +227,7 @@ const PatientMedicalRecords = () => {
   const handleDownloadReport = async (labTestId) => {
     try {
       const response = await axios.get(
-        `${API_BASE_URL}/patients/lab-reports/${labTestId}/download-pdf`,
+        `${BASE_URL}/patients/lab-reports/${labTestId}/download-pdf`,
         {
           responseType: 'blob' // Important for file downloads
         }
@@ -254,7 +251,7 @@ const PatientMedicalRecords = () => {
   const handleViewReport = async (labTestId) => {
     try {
       setReportLoading(true);
-      const response = await axios.get(`${API_BASE_URL}/patients/lab-reports/${labTestId}`);
+      const response = await axios.get(`${BASE_URL}/patients/lab-reports/${labTestId}`);
       if (response.data.success) {
         setReportData(response.data.data);
         setReportDialogOpen(true);

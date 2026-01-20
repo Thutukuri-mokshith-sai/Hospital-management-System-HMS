@@ -55,8 +55,7 @@ import {
 import axios from 'axios';
 import { toast, Toaster } from 'react-hot-toast';
 
-const BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api/v1';
-
+import { BASE_URL } from '../../api/api';
 const DoctorAppointments = () => {
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(false);

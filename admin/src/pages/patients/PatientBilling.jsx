@@ -48,9 +48,7 @@ import {
   Area,
   Legend
 } from 'recharts';
-
-// Base URL for API calls
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api/v1';
+import { BASE_URL } from '../../api/api';
 
 // Color palettes
 const COLORS = {
@@ -137,7 +135,7 @@ const PatientBilling = () => {
       setLoading(true);
       setError('');
       
-      const response = await axios.get(`${API_BASE_URL}/patients/bills`);
+      const response = await axios.get(`${BASE_URL}/patients/bills`);
       if (response.data.success) {
         setData({
           bills: response.data.data || [],
@@ -178,7 +176,7 @@ const PatientBilling = () => {
   const handleViewBill = async (bill) => {
     try {
       setLoading(true);
-      const response = await axios.get(`${API_BASE_URL}/patients/bills/${bill._id}`);
+      const response = await axios.get(`${BASE_URL}/patients/bills/${bill._id}`);
       if (response.data.success) {
         setSelectedBill(response.data.data);
         setShowBillModal(true);
@@ -202,7 +200,7 @@ const PatientBilling = () => {
       setPaymentStep(1);
     } else {
       try {
-        const response = await axios.post(`${API_BASE_URL}/patients/bills/${selectedBill._id}/pay`, {
+        const response = await axios.post(`${BASE_URL}/patients/bills/${selectedBill._id}/pay`, {
           paymentMethod,
           transactionId: `TXN${Date.now()}`,
           cardDetails: paymentMethod === 'credit_card' || paymentMethod === 'debit_card' ? cardDetails : undefined
@@ -230,7 +228,7 @@ const PatientBilling = () => {
   const handleDownloadBill = async (billId) => {
     try {
       setGeneratingPDF(true);
-      const response = await axios.get(`${API_BASE_URL}/patients/bills/${billId}/download`, {
+      const response = await axios.get(`${BASE_URL}/patients/bills/${billId}/download`, {
         responseType: 'blob'
       });
       

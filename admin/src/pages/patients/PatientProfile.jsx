@@ -20,9 +20,7 @@ import {
   EyeOff,
   ChevronRight
 } from 'lucide-react';
-
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api/v1';
-
+import { BASE_URL } from '../../api/api';
 const PatientProfile = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState({
@@ -92,7 +90,7 @@ const PatientProfile = () => {
       setLoading({ profile: true, notifications: true, emergency: true });
 
       // Fetch profile
-      const profileRes = await axios.get(`${API_BASE_URL}/patients/me`);
+      const profileRes = await axios.get(`${BASE_URL}/patients/me`);
       if (profileRes.data.success) {
         const patientData = profileRes.data.data;
         setProfile(prev => ({ ...prev, personal: patientData }));
@@ -106,7 +104,7 @@ const PatientProfile = () => {
       }
 
       // Fetch emergency contact
-      const emergencyRes = await axios.get(`${API_BASE_URL}/patients/emergency-contact`);
+      const emergencyRes = await axios.get(`${BASE_URL}/patients/emergency-contact`);
       if (emergencyRes.data.success) {
         setProfile(prev => ({ ...prev, emergency: emergencyRes.data.data }));
         // Parse emergency contact from careNotes
@@ -126,7 +124,7 @@ const PatientProfile = () => {
       }
 
       // Fetch notifications
-      const notificationsRes = await axios.get(`${API_BASE_URL}/patients/notifications`);
+      const notificationsRes = await axios.get(`${BASE_URL}/patients/notifications`);
       if (notificationsRes.data.success) {
         setProfile(prev => ({ ...prev, notifications: notificationsRes.data.data }));
       }
@@ -156,7 +154,7 @@ const PatientProfile = () => {
         ...(formData.phone && { phone: formData.phone })
       };
 
-      const response = await axios.put(`${API_BASE_URL}/patients/me`, updates);
+      const response = await axios.put(`${BASE_URL}/patients/me`, updates);
       if (response.data.success) {
         setSuccess('Profile updated successfully');
         setProfile(prev => ({ ...prev, personal: response.data.data }));
@@ -184,7 +182,7 @@ const PatientProfile = () => {
         return;
       }
 
-      const response = await axios.put(`${API_BASE_URL}/patients/change-password`, {
+      const response = await axios.put(`${BASE_URL}/patients/change-password`, {
         currentPassword: passwordData.currentPassword,
         newPassword: passwordData.newPassword
       });
@@ -209,7 +207,7 @@ const PatientProfile = () => {
       setError('');
       setSuccess('');
 
-      const response = await axios.put(`${API_BASE_URL}/patients/emergency-contact`, emergencyData);
+      const response = await axios.put(`${BASE_URL}/patients/emergency-contact`, emergencyData);
       if (response.data.success) {
         setSuccess('Emergency contact updated successfully');
         setShowEmergencyModal(false);

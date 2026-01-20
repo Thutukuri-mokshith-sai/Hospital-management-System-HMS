@@ -46,8 +46,7 @@ import {
 import { toast } from 'react-hot-toast';
 import { format, parseISO } from 'date-fns';
 
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000/api/v1';
-
+import { BASE_URL } from '../../api/api';
 const MedicineInventory = () => {
   const [medicines, setMedicines] = useState([]);
   const [filteredMedicines, setFilteredMedicines] = useState([]);
@@ -80,7 +79,7 @@ const MedicineInventory = () => {
         'Content-Type': 'application/json'
       };
 
-      const response = await fetch(`${API_BASE}/pharmacist/medicines?page=${currentPage}&limit=${itemsPerPage}`, { headers });
+      const response = await fetch(`${BASE_URL}/pharmacist/medicines?page=${currentPage}&limit=${itemsPerPage}`, { headers });
       
       if (!response.ok) throw new Error('Failed to fetch medicines');
       
@@ -109,7 +108,7 @@ const MedicineInventory = () => {
         'Content-Type': 'application/json'
       };
 
-      const response = await fetch(`${API_BASE}/pharmacist/medicines/search?query=${query}`, { headers });
+      const response = await fetch(`${BASE_URL}/pharmacist/medicines/search?query=${query}`, { headers });
       
       if (!response.ok) throw new Error('Failed to search medicines');
       
@@ -130,7 +129,7 @@ const MedicineInventory = () => {
         'Content-Type': 'application/json'
       };
 
-      const response = await fetch(`${API_BASE}/pharmacist/medicines/${medicineId}/stock`, {
+      const response = await fetch(`${BASE_URL}/pharmacist/medicines/${medicineId}/stock`, {
         method: 'PUT',
         headers,
         body: JSON.stringify({ operation, quantity, reason })
@@ -171,7 +170,7 @@ const MedicineInventory = () => {
         'Content-Type': 'application/json'
       };
 
-      const response = await fetch(`${API_BASE}/pharmacist/medicines`, {
+      const response = await fetch(`${BASE_URL}/pharmacist/medicines`, {
         method: 'POST',
         headers,
         body: JSON.stringify(medicineData)
@@ -320,7 +319,7 @@ const MedicineInventory = () => {
         'Authorization': `Bearer ${token}`
       };
       
-      const response = await fetch(`${API_BASE}/pharmacist/medicines/export?format=${format}`, { headers });
+      const response = await fetch(`${BASE_URL}/pharmacist/medicines/export?format=${format}`, { headers });
       const blob = await response.blob();
       
       const downloadUrl = window.URL.createObjectURL(blob);
